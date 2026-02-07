@@ -1,4 +1,5 @@
 import { Polar } from '@polar-sh/sdk';
+import { getURL } from '@/utils/get-url';
 
 /**
  * Polar.sh client for server-side operations
@@ -18,11 +19,9 @@ export const POLAR_ORGANIZATION_ID = process.env.POLAR_ORGANIZATION_ID!;
  * Helper to construct checkout URLs
  */
 export function getCheckoutSuccessUrl() {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    return `${baseUrl}/dashboard/subscription?success=true`;
+    return getURL('/dashboard/subscription?success=true');
 }
 
 export function getCheckoutCancelUrl() {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    return `${baseUrl}/pricing`;
+    return getURL('/pricing');
 }

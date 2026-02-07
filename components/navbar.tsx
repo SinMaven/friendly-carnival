@@ -16,8 +16,8 @@ import { useState } from 'react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 const navLinks = [
-    { href: '/challenges', label: 'Challenges', icon: Flag },
-    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/dashboard/challenges', label: 'Challenges', icon: Flag },
+    { href: '/dashboard/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/pricing', label: 'Pricing', icon: CreditCard },
 ]
 

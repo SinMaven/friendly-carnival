@@ -1,9 +1,9 @@
 import { Body, Button, Container, Head, Heading, Html, Link, Preview, Section, Text } from '@react-email/components';
 import { Tailwind } from '@react-email/tailwind';
-
 import tailwindConfig from './tailwind.config';
+import { getURL } from '@/utils/get-url';
 
-const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+const baseUrl = getURL().replace(/\/+$/, '');
 
 export function WelcomeEmail() {
   return (
