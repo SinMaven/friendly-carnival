@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Navbar } from '@/components/navbar'
 import { PricingGrid } from '@/components/pricing/pricing-grid'
 import { getProducts } from '@/features/pricing/queries/get-products'

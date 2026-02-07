@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Loader2, Save } from 'lucide-react'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/types'
+import { updateProfile } from '@/features/account/actions/update-profile'
 
 interface ProfileFormProps {
     profile: Tables<'profiles'>
@@ -30,19 +30,13 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        const supabase = createSupabaseBrowserClient()
-
         startTransition(async () => {
-            const { error } = await supabase
-                .from('profiles')
-                .update(formData)
-                .eq('id', profile.id)
+            const result = await updateProfile(formData)
 
-            if (error) {
-                setMessage({ type: 'error', text: error.message })
+            if (!result.success) {
+                setMessage({ type: 'error', text: result.message })
             } else {
-                setMessage({ type: 'success', text: 'Profile updated successfully!' })
-                router.refresh() // Refresh to show updated data
+                setMessage({ type: 'success', text: result.message })
             }
         })
     }

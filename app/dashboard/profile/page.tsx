@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/account/profile-form'
 
