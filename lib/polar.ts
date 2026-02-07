@@ -7,7 +7,9 @@ import { getURL } from '@/utils/get-url';
  */
 export const polar = new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+    // Default to sandbox in dev, production in builds, but allow override
+    server: (process.env.POLAR_SERVER as 'sandbox' | 'production') ||
+        (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')
 });
 
 /**
