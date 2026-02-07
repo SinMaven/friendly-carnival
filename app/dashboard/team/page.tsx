@@ -35,7 +35,7 @@ export default async function TeamPage() {
             )
         `)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
     const team = membership?.teams as any
     const isCaptain = team?.captain_id === user.id

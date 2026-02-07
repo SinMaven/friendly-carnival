@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { nanoid } from 'nanoid';
+import { revalidatePath } from 'next/cache';
 
 export type CreateInviteResult = {
     success: boolean;
@@ -107,6 +108,7 @@ export async function joinTeamByCode(code: string): Promise<{ success: boolean; 
         .update({ uses: invite.uses + 1 })
         .eq('id', invite.id);
 
+    revalidatePath('/dashboard/team');
     return { success: true, message: 'Successfully joined team!' };
 }
 
@@ -140,6 +142,7 @@ export async function leaveTeam(): Promise<{ success: boolean; message: string }
         return { success: false, message: 'Failed to leave team' };
     }
 
+    revalidatePath('/dashboard/team');
     return { success: true, message: 'Left team successfully' };
 }
 
@@ -186,5 +189,6 @@ export async function removeMember(memberId: string): Promise<{ success: boolean
         return { success: false, message: 'Failed to remove member' };
     }
 
+    revalidatePath('/dashboard/team');
     return { success: true, message: 'Member removed' };
 }

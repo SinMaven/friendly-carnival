@@ -1,6 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 
 export type JoinTeamResult = {
     success: boolean;
@@ -49,5 +50,6 @@ export async function joinTeam(teamId: string): Promise<JoinTeamResult> {
         return { success: false, message: 'Failed to join team.' };
     }
 
+    revalidatePath('/dashboard/team');
     return { success: true, message: 'Joined team successfully.' };
 }

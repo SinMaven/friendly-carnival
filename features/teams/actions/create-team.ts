@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
+import { revalidatePath } from 'next/cache';
 
 export type CreateTeamResult = {
     success: boolean;
@@ -67,5 +68,6 @@ export async function createTeam(name: string, slug: string): Promise<CreateTeam
         return { success: true, message: 'Team created but failed to join automatically.', team };
     }
 
+    revalidatePath('/dashboard/team');
     return { success: true, message: 'Team created successfully.', team };
 }
