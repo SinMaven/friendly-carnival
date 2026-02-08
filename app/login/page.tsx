@@ -40,7 +40,7 @@ export default function LoginPage() {
                 email,
                 password,
                 options: {
-                    captchaToken: captchaToken || undefined,
+                    captchaToken: (captchaToken && captchaToken !== 'development-token') ? captchaToken : undefined,
                 },
             })
 

@@ -1,11 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/auth', '/pricing', '/']
+// Routes that don't require authentication at all
+const publicRoutes = ['/login', '/signup', '/auth', '/pricing', '/', '/api/webhook']
 
 // Routes that are allowed even if email is not verified (but user is logged in)
-const unverifiedAllowedRoutes = ['/auth/verify-email', '/auth/callback', '/login', '/signup', '/']
+// We generally want to allow them to access the homepage, but force verification for app features.
+const unverifiedAllowedRoutes = ['/auth/verify-email', '/auth/callback', '/auth/signout', '/login', '/signup', '/']
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -31,7 +32,7 @@ export async function updateSession(request: NextRequest) {
                         supabaseResponse.cookies.set(name, value, {
                             ...options,
                             // Ensure proper session persistence
-                            maxAge: 60 * 60 * 24 * 7, // 7 days
+                            maxAge: 60 * 60 * 24 * 30, // 30 days
                             sameSite: 'lax',
                             secure: process.env.NODE_ENV === 'production',
                         })
@@ -79,6 +80,7 @@ export async function updateSession(request: NextRequest) {
             // Force redirect to verify-email page
             const url = request.nextUrl.clone()
             url.pathname = '/auth/verify-email'
+            // Keep the return URL? Maybe, but usually verification flow is fixed.
             return NextResponse.redirect(url)
         }
     }

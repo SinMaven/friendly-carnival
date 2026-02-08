@@ -1,12 +1,18 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Flag, Trophy, Zap, Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Flag, Trophy, Zap, Calendar, Edit } from 'lucide-react'
 import { notFound } from 'next/navigation'
+import { SolveHistoryGraph } from '@/components/profile/solve-history-graph'
+import Link from 'next/link'
 
 export default async function PublicProfilePage({ params }: { params: { username: string } }) {
     const supabase = await createSupabaseServerClient()
     const { username } = await params
+
+    // Get current user to check if this is the profile owner
+    const { data: { user } } = await supabase.auth.getUser()
 
     const { data: profile } = await supabase
         .from('profiles')
@@ -17,6 +23,17 @@ export default async function PublicProfilePage({ params }: { params: { username
     if (!profile) {
         notFound()
     }
+
+    const { data: solves } = await supabase
+        .from('solves')
+        .select('created_at, challenge:challenges(points)')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: true })
+
+    const formattedSolves = (solves || []).map(s => ({
+        created_at: s.created_at,
+        challenge: Array.isArray(s.challenge) ? s.challenge[0] : s.challenge as unknown as { points: number }
+    }));
 
     return (
         <div className="container mx-auto py-10 max-w-4xl space-y-8">
@@ -29,7 +46,17 @@ export default async function PublicProfilePage({ params }: { params: { username
                     </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                    <h1 className="text-4xl font-bold">{profile.username}</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-4xl font-bold">{profile.username}</h1>
+                        {user?.id === profile.id && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href="/dashboard/settings">
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Edit Profile
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                     <p className="text-muted-foreground max-w-md">
                         {profile.bio || 'This user has not written a bio yet.'}
                     </p>
@@ -76,6 +103,24 @@ export default async function PublicProfilePage({ params }: { params: { username
                         <div className="text-2xl font-bold">{profile.total_solves || 0}</div>
                     </CardContent>
                 </Card>
+                {/* Placeholder for future badges or other stats */}
+                <Card className="hidden md:block">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+                        <Trophy className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Solve History Graph */}
+            <div className="w-full">
+                <h2 className="text-2xl font-bold mb-4">Progression</h2>
+                <div className="h-[400px]">
+                    <SolveHistoryGraph solves={formattedSolves} />
+                </div>
             </div>
         </div>
     )

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getSubscription } from '@/features/account/queries/get-subscription'
 import { CreditCard, ExternalLink, CheckCircle2 } from 'lucide-react'
@@ -38,7 +38,7 @@ export default async function SubscriptionPage() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Plan</span>
                                     <span className="font-medium">
-                                        {(subscription as any).product?.name || 'Unknown Plan'}
+                                        {subscription.prices?.products?.name || 'Unknown Plan'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -62,7 +62,7 @@ export default async function SubscriptionPage() {
                             </div>
                             <div className="flex gap-2 pt-4">
                                 <Button variant="outline" asChild>
-                                    <a href="/api/create-portal-link" target="_blank">
+                                    <a href="/api/customer-portal">
                                         Manage Subscription
                                         <ExternalLink className="h-4 w-4 ml-2" />
                                     </a>

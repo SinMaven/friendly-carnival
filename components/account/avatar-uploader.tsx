@@ -3,7 +3,7 @@
 import { useState, useRef, useTransition } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Loader2, Upload, Camera } from 'lucide-react'
+import { Loader2, Camera } from 'lucide-react'
 import { uploadAvatar } from '@/features/account/actions/upload-avatar'
 
 interface AvatarUploaderProps {
@@ -37,7 +37,9 @@ export function AvatarUploader({ currentUrl, fallback }: AvatarUploaderProps) {
             })
 
             if (result.success && result.url) {
-                setPreviewUrl(result.url)
+                // Add cache-busting parameter for immediate display
+                const cacheBustedUrl = `${result.url}?t=${Date.now()}`
+                setPreviewUrl(cacheBustedUrl)
             } else {
                 setPreviewUrl(null)
             }

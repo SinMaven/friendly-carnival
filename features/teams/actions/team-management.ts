@@ -1,6 +1,7 @@
 'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { nanoid } from 'nanoid'
 
@@ -68,6 +69,7 @@ export async function createTeam(name: string): Promise<TeamActionResult> {
     }
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Team created successfully', data: team }
 }
 
@@ -135,6 +137,7 @@ export async function joinTeam(inviteCode: string): Promise<TeamActionResult> {
         .eq('id', invite.id)
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Successfully joined the team' }
 }
 
@@ -177,6 +180,7 @@ export async function leaveTeam(): Promise<TeamActionResult> {
     }
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Successfully left the team' }
 }
 
@@ -269,6 +273,7 @@ export async function updateTeamName(teamId: string, name: string): Promise<Team
     }
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Team name updated' }
 }
 
@@ -307,6 +312,7 @@ export async function deleteTeam(teamId: string): Promise<TeamActionResult> {
     }
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Team deleted' }
 }
 
@@ -361,5 +367,102 @@ export async function removeMember(memberId: string, teamId: string): Promise<Te
     }
 
     revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
     return { success: true, message: 'Member removed from team' }
+}
+
+/**
+ * Transfers team ownership to another member.
+ * Only captains can transfer ownership.
+ * Uses admin client to ensure atomic-like updates without RLS interference.
+ */
+export async function transferOwnership(memberId: string, teamId: string): Promise<TeamActionResult> {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user?.id) {
+        return { success: false, message: 'Unauthorized' }
+    }
+
+    if (!process.env.SUPABASE_SECRET_KEY) {
+        console.error('SUPABASE_SECRET_KEY is not defined')
+        return { success: false, message: 'Server configuration error' }
+    }
+
+    // Verify user is team captain
+    const { data: team } = await supabase
+        .from('teams')
+        .select('captain_id')
+        .eq('id', teamId)
+        .single()
+
+    if (!team || team.captain_id !== user.id) {
+        return { success: false, message: 'Only the team captain can transfer ownership' }
+    }
+
+    // Verify member is in team
+    const { data: member } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('id', memberId)
+        .eq('team_id', teamId)
+        .single()
+
+    if (!member) {
+        return { success: false, message: 'Member not found in team' }
+    }
+
+    if (member.user_id === user.id) {
+        return { success: false, message: 'You are already the captain' }
+    }
+
+    // Use admin client for sensitive updates
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SECRET_KEY,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    // Update team captain
+    const { error: teamError } = await supabaseAdmin
+        .from('teams')
+        .update({ captain_id: member.user_id })
+        .eq('id', teamId)
+
+    if (teamError) {
+        console.error('Transfer ownership team update error:', teamError)
+        return { success: false, message: 'Failed to transfer ownership' }
+    }
+
+    // Update roles
+    // Promoted member -> captain
+    await supabaseAdmin
+        .from('team_members')
+        .update({ role: 'captain' })
+        .eq('id', memberId)
+
+    // Old captain -> member
+    // Find the old captain's member_id
+    const { data: oldCaptainMember } = await supabaseAdmin
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('team_id', teamId)
+        .single()
+
+    if (oldCaptainMember) {
+        await supabaseAdmin
+            .from('team_members')
+            .update({ role: 'member' })
+            .eq('id', oldCaptainMember.id)
+    }
+
+    revalidatePath('/dashboard/team')
+    revalidatePath('/dashboard', 'layout')
+    return { success: true, message: 'Ownership transferred successfully' }
 }

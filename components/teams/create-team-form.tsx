@@ -1,16 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Users } from 'lucide-react'
-import { createTeam } from '@/features/teams/actions/create-team'
+import { createTeam } from '@/features/teams/actions/team-management'
 
 export function CreateTeamForm() {
-    const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [name, setName] = useState('')
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -19,14 +17,13 @@ export function CreateTeamForm() {
         e.preventDefault()
         if (!name.trim()) return
 
-        const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-
         startTransition(async () => {
-            const result = await createTeam(name.trim(), slug)
+            const result = await createTeam(name.trim())
             if (result.success) {
                 setMessage({ type: 'success', text: result.message })
                 setName('')
-                router.refresh() // Refresh to show updated data
+                // Full page reload to ensure server component re-renders with new team data
+                window.location.href = '/dashboard/team'
             } else {
                 setMessage({ type: 'error', text: result.message })
             }

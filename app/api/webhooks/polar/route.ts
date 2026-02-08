@@ -1,10 +1,10 @@
-import { Webhooks } from '@polar-sh/nextjs';
+import { Webhooks } from '@polar-sh/supabase';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/webhooks/polar
  * 
- * Handles Polar.sh webhook events
+ * Handles Polar.sh webhook events using the official Supabase integration.
  */
 export const POST = Webhooks({
     webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
@@ -46,12 +46,9 @@ export const POST = Webhooks({
                 .from('prices')
                 .select('id')
                 .eq('product_id', product.id)
-                .maybeSingle(); // For now just getting the first active price
+                .maybeSingle();
             priceId = price?.id;
         }
-
-        // Fallback: If we can't find by metadata, just store the Polar IDs
-        // but ideally we want the price_id for the join in getSubscription
 
         // Update subscription status
         await supabase
@@ -60,7 +57,8 @@ export const POST = Webhooks({
                 user_id: profile.id,
                 polar_subscription_id: payload.data.id,
                 polar_product_id: payload.data.productId,
-                price_id: priceId, // Link to local prices table
+                polar_customer_id: payload.data.customerId, // Store customer ID for portal access
+                price_id: priceId,
                 status: 'active',
                 current_period_start: payload.data.currentPeriodStart,
                 current_period_end: payload.data.currentPeriodEnd,
@@ -70,6 +68,21 @@ export const POST = Webhooks({
             });
 
         console.log('Subscription saved for user:', profile.id);
+    },
+
+    // Handle subscription becoming active
+    onSubscriptionActive: async (payload) => {
+        console.log('Subscription active:', payload.data.id);
+
+        const supabase = await createSupabaseServerClient();
+
+        await supabase
+            .from('subscriptions')
+            .update({
+                status: 'active',
+                updated_at: new Date().toISOString()
+            })
+            .eq('polar_subscription_id', payload.data.id);
     },
 
     // Handle subscription updates
@@ -102,5 +115,26 @@ export const POST = Webhooks({
                 updated_at: new Date().toISOString()
             })
             .eq('polar_subscription_id', payload.data.id);
+    },
+
+    // Handle subscription revoked (e.g., payment failed)
+    onSubscriptionRevoked: async (payload) => {
+        console.log('Subscription revoked:', payload.data.id);
+
+        const supabase = await createSupabaseServerClient();
+
+        await supabase
+            .from('subscriptions')
+            .update({
+                status: 'revoked',
+                updated_at: new Date().toISOString()
+            })
+            .eq('polar_subscription_id', payload.data.id);
+    },
+
+    // Handle order paid (for one-time purchases)
+    onOrderPaid: async (payload) => {
+        console.log('Order paid:', payload.data.id);
+        // Handle one-time purchase logic here if needed
     }
 });

@@ -7,6 +7,11 @@ export async function updateSettings(settings: {
     notification_email: boolean;
     notification_solves: boolean;
     notification_leaderboard: boolean;
+    bio?: string;
+    website?: string;
+    username?: string;
+    full_name?: string;
+    email?: string;
 }) {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -15,9 +20,21 @@ export async function updateSettings(settings: {
         throw new Error('Unauthorized');
     }
 
+    const { email, ...profileUpdates } = settings;
+    let message = 'Settings updated successfully!';
+
+    // Update email if changed
+    if (email && email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email });
+        if (emailError) {
+            return { success: false, message: `Email update failed: ${emailError.message}` };
+        }
+        message = 'Settings updated! Please check your new email for a confirmation link.';
+    }
+
     const { error } = await supabase
         .from('profiles')
-        .update(settings)
+        .update(profileUpdates)
         .eq('id', user.id);
 
     if (error) {
@@ -25,5 +42,5 @@ export async function updateSettings(settings: {
     }
 
     revalidatePath('/dashboard/settings');
-    return { success: true, message: 'Settings updated successfully!' };
+    return { success: true, message };
 }

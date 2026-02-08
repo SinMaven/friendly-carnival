@@ -31,10 +31,15 @@ export async function deleteAccount(
         return { success: false, message: 'Email confirmation does not match' }
     }
 
+    if (!process.env.SUPABASE_SECRET_KEY) {
+        console.error('SUPABASE_SECRET_KEY is not defined')
+        return { success: false, message: 'Server configuration error. Please contact support.' }
+    }
+
     // Use admin client for user deletion
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SECRET_KEY!,
+        process.env.SUPABASE_SECRET_KEY,
         {
             auth: {
                 autoRefreshToken: false,
@@ -48,7 +53,7 @@ export async function deleteAccount(
 
     if (error) {
         console.error('Account deletion error:', error)
-        return { success: false, message: 'Failed to delete account' }
+        return { success: false, message: error.message || 'Failed to delete account' }
     }
 
     // Clear session cookies

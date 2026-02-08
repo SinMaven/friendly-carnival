@@ -7,6 +7,7 @@ import { AvatarUploader } from '@/components/account/avatar-uploader'
 import { ChangePasswordForm } from '@/components/account/change-password-form'
 import { DeleteAccountButton } from '@/components/account/delete-account-button'
 import { MFASettings } from '@/components/account/mfa-settings'
+import { ShareProfileButton } from '@/components/account/share-profile-button'
 import { User, Shield, Trash2 } from 'lucide-react'
 
 export default async function ProfilePage() {
@@ -26,9 +27,14 @@ export default async function ProfilePage() {
 
     return (
         <div className="max-w-2xl space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Profile</h1>
-                <p className="text-muted-foreground">Manage your account settings</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Profile</h1>
+                    <p className="text-muted-foreground">Manage your account settings</p>
+                </div>
+                {profile?.username && (
+                    <ShareProfileButton username={profile.username} />
+                )}
             </div>
 
             {/* Profile Info */}

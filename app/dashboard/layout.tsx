@@ -1,7 +1,7 @@
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireUser } from '@/lib/session'
 import { Separator } from '@/components/ui/separator'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb'
 
@@ -10,12 +10,8 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
+    const user = await requireUser()
     const supabase = await createSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        redirect('/login')
-    }
 
     // Fetch subscription
     const { data: subscription } = await supabase

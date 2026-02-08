@@ -9,8 +9,7 @@ import {
     Trophy,
     Flag,
     CreditCard,
-    Menu,
-    X
+    Menu
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -60,12 +59,27 @@ export function Navbar({ user }: NavbarProps) {
 
                 {/* Auth Buttons */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Button variant="ghost" asChild>
-                        <Link href="/login">Login</Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href="/signup">Sign Up</Link>
-                    </Button>
+                    {user ? (
+                        <>
+                            <Button variant="ghost" asChild>
+                                <Link href="/dashboard">Dashboard</Link>
+                            </Button>
+                            <form action="/auth/signout" method="post">
+                                <Button variant="outline" type="submit">
+                                    Sign Out
+                                </Button>
+                            </form>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="ghost" asChild>
+                                <Link href="/login">Login</Link>
+                            </Button>
+                            <Button asChild>
+                                <Link href="/signup">Sign Up</Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
 
                 {/* Mobile Menu */}

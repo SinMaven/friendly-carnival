@@ -57,13 +57,12 @@ export function DeleteAccountButton({ userEmail }: DeleteAccountButtonProps) {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Delete Account</AlertDialogTitle>
                     <AlertDialogDescription className="space-y-3">
-                        <p>
+                        <span>
                             This action cannot be undone. This will permanently delete your
                             account and remove all associated data.
-                        </p>
-                        <p>
+                            <br /><br />
                             Type <strong>{userEmail}</strong> to confirm.
-                        </p>
+                        </span>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <Input

@@ -26,6 +26,7 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaRef, TurnstileCaptcha
         const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
         // Development fallback - auto verify with a test token
+        // FORCED DISABLE for local testing as requested
         if (!siteKey || siteKey === 'YOUR_TURNSTILE_SITE_KEY') {
             // In development, simulate successful verification
             if (typeof window !== 'undefined') {
@@ -41,7 +42,7 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaRef, TurnstileCaptcha
         return (
             <Turnstile
                 ref={turnstileRef}
-                siteKey={siteKey}
+                siteKey={siteKey || "disabled"}
                 onSuccess={onVerify}
                 onError={onError}
                 onExpire={onExpire}
