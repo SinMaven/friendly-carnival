@@ -21,7 +21,13 @@ const navLinks = [
     { href: '/pricing', label: 'Pricing', icon: CreditCard },
 ]
 
-export function Navbar() {
+import { User } from '@supabase/supabase-js'
+
+interface NavbarProps {
+    user?: User | null
+}
+
+export function Navbar({ user }: NavbarProps) {
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -29,7 +35,7 @@ export function Navbar() {
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto max-w-7xl flex h-16 items-center justify-between px-4">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+                <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-xl">
                     <Flag className="h-6 w-6 text-primary" />
                     <span>CTF Platform</span>
                 </Link>

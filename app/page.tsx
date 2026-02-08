@@ -54,10 +54,17 @@ const stats = [
     { value: '99.9%', label: 'Uptime' },
 ]
 
-export default function LandingPage() {
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+// ... imports ...
+
+export default async function LandingPage() {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
     return (
         <div className="min-h-screen flex flex-col">
-            <Navbar />
+            <Navbar user={user} />
 
             {/* Hero Section */}
             <section className="flex-1 flex items-center justify-center py-20 px-4">

@@ -30,7 +30,7 @@ export function ChallengeFilters({ tags }: { tags: Tables<'tags'>[] }) {
             params.delete(key)
         }
         startTransition(() => {
-            router.push(`/challenges?${params.toString()}`)
+            router.push(`/dashboard/challenges?${params.toString()}`)
         })
     }, [router, searchParams])
 
@@ -42,7 +42,7 @@ export function ChallengeFilters({ tags }: { tags: Tables<'tags'>[] }) {
     const clearFilters = () => {
         setSearchValue('')
         startTransition(() => {
-            router.push('/challenges')
+            router.push('/dashboard/challenges')
         })
     }
 

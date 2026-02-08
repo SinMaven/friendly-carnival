@@ -33,7 +33,7 @@ export function PricingCard({
 
         // Redirect to Polar checkout
         // The product ID should match the Polar product ID
-        const polarProductId = (product.metadata as { polar_product_id?: string })?.polar_product_id || price.id
+        const polarProductId = (product.metadata as { polar_product_id?: string })?.polar_product_id || product.id
 
         window.location.href = `/api/checkout?products=${polarProductId}`
     }

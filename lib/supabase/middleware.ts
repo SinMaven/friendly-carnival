@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes that don't require authentication
+const publicRoutes = ['/login', '/signup', '/auth', '/pricing', '/']
+
+// Routes that are allowed even if email is not verified (but user is logged in)
+const unverifiedAllowedRoutes = ['/auth/verify-email', '/auth/callback', '/login', '/signup', '/']
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -15,34 +21,72 @@ export async function updateSession(request: NextRequest) {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
+                    cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     )
                     supabaseResponse = NextResponse.next({
                         request,
                     })
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
+                        supabaseResponse.cookies.set(name, value, {
+                            ...options,
+                            // Ensure proper session persistence
+                            maxAge: 60 * 60 * 24 * 7, // 7 days
+                            sameSite: 'lax',
+                            secure: process.env.NODE_ENV === 'production',
+                        })
                     )
                 },
             },
         }
     )
 
+    // specific to Next.js 15 / Supabase SSR:
+    // Do not run Supabase code on static routes
+    if (request.nextUrl.pathname.startsWith('/_next')) {
+        return supabaseResponse
+    }
+
+    // IMPORTANT: getUser() refreshes the session if needed
     const {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/signup') &&
-        request.nextUrl.pathname !== '/'
-    ) {
-        // no user, potentially respond by redirecting the user to the login page
+    const pathname = request.nextUrl.pathname
+
+    // Check if route is public
+    const isPublicRoute = publicRoutes.some(route =>
+        pathname === route || pathname.startsWith(`${route}/`)
+    )
+
+    // 1. No user and trying to access protected route
+    if (!user && !isPublicRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
+        // Add ?next= param to redirect back after login
+        url.searchParams.set('next', pathname)
+        return NextResponse.redirect(url)
+    }
+
+
+    // 2. User exists but email not verified
+    if (user && !user.email_confirmed_at) {
+        const isAllowedForUnverified = unverifiedAllowedRoutes.some(route =>
+            pathname === route || pathname.startsWith(`${route}/`)
+        )
+
+        if (!isAllowedForUnverified) {
+            // Force redirect to verify-email page
+            const url = request.nextUrl.clone()
+            url.pathname = '/auth/verify-email'
+            return NextResponse.redirect(url)
+        }
+    }
+
+    // 3. Authenticated user on auth pages (login/signup) -> redirect to dashboard
+    if (user && (pathname === '/login' || pathname === '/signup')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
         return NextResponse.redirect(url)
     }
 

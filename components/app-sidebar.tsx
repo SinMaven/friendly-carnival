@@ -51,10 +51,14 @@ const accountNavItems = [
     { title: 'Settings', url: '/dashboard/settings', icon: Settings },
 ]
 
-export function AppSidebar({ user }: { user: { email: string; id: string } }) {
+import { Badge } from '@/components/ui/badge'
+
+export function AppSidebar({ user, subscription }: { user: { email: string; id: string }; subscription?: any }) {
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createSupabaseBrowserClient()
+
+    const planName = subscription?.prices?.products?.name || 'Free Plan'
 
     const handleSignOut = async () => {
         await supabase.auth.signOut()
@@ -67,7 +71,7 @@ export function AppSidebar({ user }: { user: { email: string; id: string } }) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/">
+                            <Link href="/dashboard">
                                 <div className="flex aspect-square size-8 items-center justify-center  bg-primary text-primary-foreground">
                                     <Flag className="size-4" />
                                 </div>
@@ -136,7 +140,14 @@ export function AppSidebar({ user }: { user: { email: string; id: string } }) {
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">{user.email}</span>
-                                        <span className="truncate text-xs text-muted-foreground">Free Plan</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="truncate text-xs text-muted-foreground">{planName}</span>
+                                            {planName !== 'Free Plan' && (
+                                                <Badge variant="outline" className="h-4 px-1 text-[10px] uppercase">
+                                                    {planName.replace(' Plan', '')}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                     <ChevronUp className="ml-auto size-4" />
                                 </SidebarMenuButton>

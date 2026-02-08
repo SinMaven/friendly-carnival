@@ -54,13 +54,13 @@ export async function createTeam(name: string, slug: string): Promise<CreateTeam
         return { success: false, message: 'Failed to create team.' };
     }
 
-    // Add Creator as Owner
+    // Add Creator as Captain
     const { error: memberError } = await supabase
         .from('team_members')
         .insert({
             team_id: team.id,
             user_id: user.id,
-            role: 'owner'
+            role: 'captain'
         });
 
     if (memberError) {
@@ -69,5 +69,6 @@ export async function createTeam(name: string, slug: string): Promise<CreateTeam
     }
 
     revalidatePath('/dashboard/team');
+    revalidatePath('/dashboard', 'layout');
     return { success: true, message: 'Team created successfully.', team };
 }

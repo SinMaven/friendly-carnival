@@ -17,9 +17,17 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    // Fetch subscription
+    const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, prices(*, products(*))')
+        .eq('user_id', user.id)
+        .in('status', ['trialing', 'active'])
+        .maybeSingle()
+
     return (
         <SidebarProvider>
-            <AppSidebar user={{ email: user.email || '', id: user.id }} />
+            <AppSidebar user={{ email: user.email || '', id: user.id }} subscription={subscription} />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
                     <SidebarTrigger className="-ml-1" />

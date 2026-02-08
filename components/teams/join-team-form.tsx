@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, UserPlus } from 'lucide-react'
-import { joinTeamByCode } from '@/features/teams/actions/team-management'
+import { joinTeam } from '@/features/teams/actions/team-management'
 
 interface JoinTeamFormProps {
     initialCode?: string
@@ -24,7 +24,7 @@ export function JoinTeamForm({ initialCode = '' }: JoinTeamFormProps) {
         if (!code.trim()) return
 
         startTransition(async () => {
-            const result = await joinTeamByCode(code.trim())
+            const result = await joinTeam(code.trim())
             if (result.success) {
                 setMessage({ type: 'success', text: result.message })
                 router.refresh()
@@ -57,8 +57,8 @@ export function JoinTeamForm({ initialCode = '' }: JoinTeamFormProps) {
 
                     {message && (
                         <div className={`p-3  text-sm ${message.type === 'success'
-                                ? 'bg-green-500/10 text-green-500'
-                                : 'bg-red-500/10 text-red-500'
+                            ? 'bg-green-500/10 text-green-500'
+                            : 'bg-red-500/10 text-red-500'
                             }`}>
                             {message.text}
                         </div>

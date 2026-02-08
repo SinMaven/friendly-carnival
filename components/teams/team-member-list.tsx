@@ -24,16 +24,17 @@ interface TeamMemberListProps {
     members: TeamMember[]
     captainId: string
     currentUserId: string
+    teamId: string
 }
 
-export function TeamMemberList({ members, captainId, currentUserId }: TeamMemberListProps) {
+export function TeamMemberList({ members, captainId, currentUserId, teamId }: TeamMemberListProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const isCaptain = currentUserId === captainId
 
     const handleRemove = (memberId: string) => {
         startTransition(async () => {
-            const result = await removeMember(memberId)
+            const result = await removeMember(memberId, teamId)
             if (result.success) {
                 router.refresh()
             }

@@ -4,6 +4,7 @@ import { getChallenge } from '@/features/challenges/queries/get-challenge'
 import { FlagSubmitForm } from '@/components/challenges/flag-submit-form'
 import { ContainerControls } from '@/components/challenges/container-controls'
 import { AssetList } from '@/components/challenges/asset-list'
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -73,10 +74,8 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
 
                     <Separator />
 
-                    {/* Description */}
-                    <div className="prose prose-neutral dark:prose-invert max-w-none">
-                        <div dangerouslySetInnerHTML={{ __html: challenge.description_markdown }} />
-                    </div>
+                    {/* Description - Now using safe markdown rendering */}
+                    <MarkdownRenderer content={challenge.description_markdown} />
 
                     {/* Assets */}
                     <AssetList assets={challenge.assets} />

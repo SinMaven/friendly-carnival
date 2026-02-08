@@ -11,6 +11,7 @@ import { JoinTeamForm } from '@/components/teams/join-team-form'
 import { InviteCodeGenerator } from '@/components/teams/invite-code-generator'
 import { TeamMemberList } from '@/components/teams/team-member-list'
 import { LeaveTeamButton } from '@/components/teams/leave-team-button'
+import { TeamSettings } from '@/components/teams/team-settings'
 import { Crown, Trophy, Users } from 'lucide-react'
 
 export default async function TeamPage() {
@@ -137,11 +138,15 @@ export default async function TeamPage() {
                         members={members}
                         captainId={team.captain_id}
                         currentUserId={user.id}
+                        teamId={team.id}
                     />
 
                     {/* Captain Controls */}
                     {isCaptain && (
-                        <InviteCodeGenerator teamId={team.id} />
+                        <>
+                            <InviteCodeGenerator teamId={team.id} />
+                            <TeamSettings teamId={team.id} teamName={team.name} />
+                        </>
                     )}
 
                     {/* Leave Team */}

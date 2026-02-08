@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Copy, Check, Loader2, Link2 } from 'lucide-react'
-import { createInvite } from '@/features/teams/actions/team-management'
+import { generateInviteCode } from '@/features/teams/actions/team-management'
 
 interface InviteCodeGeneratorProps {
     teamId: string
@@ -21,9 +21,9 @@ export function InviteCodeGenerator({ teamId }: InviteCodeGeneratorProps) {
 
     const handleGenerate = () => {
         startTransition(async () => {
-            const result = await createInvite(teamId)
-            if (result.success && result.code) {
-                setCode(result.code)
+            const result = await generateInviteCode(teamId)
+            if (result.success && result.data?.code) {
+                setCode(result.data.code)
                 setError(null)
             } else {
                 setError(result.message)

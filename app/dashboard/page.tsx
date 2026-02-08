@@ -53,13 +53,13 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent className="flex gap-4">
                     <Button asChild>
-                        <Link href="/challenges">
+                        <Link href="/dashboard/challenges">
                             <Target className="mr-2 h-4 w-4" />
                             Browse Challenges
                         </Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/leaderboard">
+                        <Link href="/dashboard/leaderboard">
                             <Trophy className="mr-2 h-4 w-4" />
                             View Leaderboard
                         </Link>
