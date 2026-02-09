@@ -153,7 +153,7 @@ export async function submitFlag(
             };
         }
         console.error('Error recording solve:', solveError);
-        return { success: false, message: 'Error recording solve. Please try again.' };
+        return { success: false, message: `Error recording solve: ${solveError.message || 'Unknown error'}. Code: ${solveError.code}` };
     }
 
 

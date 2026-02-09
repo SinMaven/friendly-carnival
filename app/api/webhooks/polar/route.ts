@@ -117,15 +117,40 @@ export const POST = Webhooks({
         console.log('Subscription updated:', payload.data.id);
         const status = payload.data.status === 'active' ? 'active' : 'canceled';
 
+        // Find the local product that matches this Polar product (in case upgrade occurred)
+        const { data: product } = await supabaseAdmin
+            .from('products')
+            .select('id')
+            .eq('metadata->>polar_product_id', payload.data.productId)
+            .maybeSingle();
+
+        let priceId = null;
+        if (product) {
+            const { data: price } = await supabaseAdmin
+                .from('prices')
+                .select('id')
+                .eq('product_id', product.id)
+                .maybeSingle();
+            priceId = price?.id;
+        }
+
+        const updateData: any = {
+            status,
+            current_period_end: payload.data.currentPeriodEnd,
+            updated_at: new Date().toISOString()
+        };
+
+        if (priceId) {
+            updateData.price_id = priceId;
+            updateData.polar_product_id = payload.data.productId;
+        }
+
         await supabaseAdmin
             .from('subscriptions')
-            .update({
-                status,
-                current_period_end: payload.data.currentPeriodEnd,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('polar_subscription_id', payload.data.id);
     },
+
 
     // Handle cancellations
     onSubscriptionCanceled: async (payload) => {

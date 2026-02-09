@@ -53,7 +53,7 @@ export default async function TeamPage() {
                 id,
                 user_id,
                 role,
-                profiles:user_id (
+                profiles (
                     id,
                     username,
                     avatar_url,
