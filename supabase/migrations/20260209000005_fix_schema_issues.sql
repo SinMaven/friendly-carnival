@@ -11,9 +11,9 @@ CREATE POLICY "Teams are viewable by everyone"
 ON public.teams FOR SELECT 
 USING (true);
 
-CREATE POLICY "Authenticated users can create teams" 
+CREATE POLICY "Users can create teams" 
 ON public.teams FOR INSERT 
-WITH CHECK (auth.role() = 'authenticated');
+WITH CHECK (auth.uid() = captain_id);
 
 CREATE POLICY "Captains can update their teams" 
 ON public.teams FOR UPDATE 

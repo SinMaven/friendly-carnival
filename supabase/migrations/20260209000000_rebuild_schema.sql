@@ -384,15 +384,43 @@ CREATE TRIGGER on_solve_created
 
 CREATE OR REPLACE FUNCTION public.handle_new_user_profile()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_username TEXT;
+  v_counter INT := 0;
 BEGIN
-  INSERT INTO public.profiles (id, username, full_name, avatar_url)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || SUBSTR(NEW.id::TEXT, 1, 8)),
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'avatar_url'
-  )
-  ON CONFLICT (id) DO NOTHING;
+  v_username := COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || SUBSTR(NEW.id::TEXT, 1, 8));
+  
+  -- Simple loop to find unique username if collision occurs (unlikely but possible)
+  LOOP
+    BEGIN
+      INSERT INTO public.profiles (id, username, full_name, avatar_url)
+      VALUES (
+        NEW.id,
+        CASE WHEN v_counter = 0 THEN v_username ELSE v_username || '_' || v_counter END,
+        NEW.raw_user_meta_data->>'full_name',
+        NEW.raw_user_meta_data->>'avatar_url'
+      )
+      ON CONFLICT (id) DO NOTHING; -- Handle ID conflict (idempotency)
+      
+      EXIT; -- Success
+    EXCEPTION WHEN unique_violation THEN
+      -- If username collision, increment and retry
+      v_counter := v_counter + 1;
+      IF v_counter > 10 THEN
+         -- Fallback to random suffix if we fail too many times
+         INSERT INTO public.profiles (id, username, full_name, avatar_url)
+         VALUES (
+           NEW.id,
+           'user_' || SUBSTR(GEN_RANDOM_UUID()::TEXT, 1, 12),
+           NEW.raw_user_meta_data->>'full_name',
+           NEW.raw_user_meta_data->>'avatar_url'
+         )
+         ON CONFLICT (id) DO NOTHING;
+         EXIT;
+      END IF;
+    END;
+  END LOOP;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
