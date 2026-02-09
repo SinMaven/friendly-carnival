@@ -12,7 +12,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -32,10 +31,10 @@ interface TeamMember {
     user_id: string
     role: string
     profile: {
-        username: string
+        username: string | null
         avatar_url: string | null
-        total_points: number
-    }
+        total_points: number | null
+    } | null
 }
 
 interface TeamMemberListProps {
@@ -89,20 +88,20 @@ export function TeamMemberList({ members, captainId, currentUserId, teamId }: Te
                         >
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage src={member.profile.avatar_url || undefined} />
+                                    <AvatarImage src={member.profile?.avatar_url || undefined} />
                                     <AvatarFallback>
-                                        {member.profile.username?.charAt(0).toUpperCase() || '?'}
+                                        {member.profile?.username?.charAt(0).toUpperCase() || '?'}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="font-medium">{member.profile.username}</span>
+                                        <span className="font-medium">{member.profile?.username || 'Unknown'}</span>
                                         {member.user_id === captainId && (
                                             <Crown className="h-4 w-4 text-yellow-500" />
                                         )}
                                     </div>
                                     <span className="text-sm text-muted-foreground">
-                                        {member.profile.total_points} points
+                                        {member.profile?.total_points || 0} points
                                     </span>
                                 </div>
                             </div>
@@ -144,7 +143,7 @@ export function TeamMemberList({ members, captainId, currentUserId, teamId }: Te
                     <AlertDialogHeader>
                         <AlertDialogTitle>Transfer Team Ownership</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to promote <strong>{memberToPromote?.profile.username}</strong> to captain?
+                            Are you sure you want to promote <strong>{memberToPromote?.profile?.username || 'Unknown'}</strong> to captain?
                             You will become a regular member and lose administrative privileges.
                         </AlertDialogDescription>
                     </AlertDialogHeader>

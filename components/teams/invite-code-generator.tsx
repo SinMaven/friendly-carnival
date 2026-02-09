@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,6 @@ interface InviteCodeGeneratorProps {
 }
 
 export function InviteCodeGenerator({ teamId }: InviteCodeGeneratorProps) {
-    const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [code, setCode] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)

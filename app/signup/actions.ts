@@ -3,7 +3,10 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 
-export async function signup(prevState: any, formData: FormData): Promise<{ error: string | null; success: boolean; email: string | null; }> {
+export async function signup(
+    _prevState: unknown,
+    formData: FormData
+): Promise<{ error: string | null; success: boolean; email: string | null; }> {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const captchaToken = formData.get('captchaToken') as string

@@ -10,8 +10,7 @@ import {
     Zap,
     Users,
     Terminal,
-    ArrowRight,
-    CheckCircle2
+    ArrowRight
 } from 'lucide-react'
 
 const features = [

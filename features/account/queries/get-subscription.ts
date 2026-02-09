@@ -23,8 +23,8 @@ export async function getSubscription() {
       .maybeSingle();
 
     if (priceData) {
-      // @ts-ignore
-      data.prices = priceData;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any).prices = priceData;
     }
   }
 

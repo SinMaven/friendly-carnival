@@ -24,7 +24,7 @@ export async function updateSettings(settings: {
 
     // Remove undefined values
     const profileUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, v]) => v !== undefined)
+        Object.entries(updates).filter(([, v]) => v !== undefined)
     );
     let message = 'Settings updated successfully!';
 

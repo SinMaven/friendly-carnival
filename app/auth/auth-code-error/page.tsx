@@ -101,8 +101,17 @@ export default function AuthCodeErrorPage() {
             ? decodeURIComponent(decodeURIComponent(errorDescription))
             : null
 
-        setRawError(decodedDescription || errorCode)
-        setErrorInfo(getErrorInfo(decodedDescription, errorCode))
+        const newRawError = decodedDescription || errorCode
+        const newErrorInfo = getErrorInfo(decodedDescription, errorCode)
+
+        // Only update state if values changed to avoid cascading renders
+        if (newRawError !== rawError) {
+            setRawError(newRawError)
+        }
+        if (newErrorInfo !== errorInfo) {
+            setErrorInfo(newErrorInfo)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return (

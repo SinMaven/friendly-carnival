@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,27 +9,51 @@ import { Shield, Loader2, Trash2, CheckCircle2 } from 'lucide-react'
 import { enrollMFA, verifyMFA, unenrollMFA, getMFAFactors } from '@/features/account/actions/mfa'
 import { useQRCode } from 'next-qrcode'
 
+interface Factor {
+    id: string
+    factor_type: string
+    status: string
+    created_at: string
+}
+
+interface EnrollData {
+    id: string
+    totp: {
+        uri: string
+    }
+}
+
 export function MFASettings() {
-    const [factors, setFactors] = useState<any[]>([])
+    const [factors, setFactors] = useState<Factor[]>([])
     const [loading, setLoading] = useState(true)
     const [enrolling, setEnrolling] = useState(false)
-    const [enrollData, setEnrollData] = useState<any>(null)
+    const [enrollData, setEnrollData] = useState<EnrollData | null>(null)
     const [verifyCode, setVerifyCode] = useState('')
     const [verifying, setVerifying] = useState(false)
     const { Canvas } = useQRCode()
 
-    useEffect(() => {
-        loadFactors()
-    }, [])
-
-    const loadFactors = async () => {
+    const loadFactors = useCallback(async () => {
         setLoading(true)
         const result = await getMFAFactors()
         if (result.data) {
             setFactors(result.data.all || [])
         }
         setLoading(false)
-    }
+    }, [])
+
+    // Load factors on mount using a flag to prevent cascading renders
+    const [hasLoaded, setHasLoaded] = useState(false)
+    useEffect(() => {
+        if (!hasLoaded) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setHasLoaded(true)
+            // Defer the async loading to avoid setState during render
+            const timer = setTimeout(() => {
+                loadFactors()
+            }, 0)
+            return () => clearTimeout(timer)
+        }
+    }, [hasLoaded, loadFactors])
 
     const handleEnroll = async () => {
         setEnrolling(true)
@@ -47,7 +71,7 @@ export function MFASettings() {
         if (result.success) {
             setEnrollData(null)
             setVerifyCode('')
-            loadFactors()
+            await loadFactors()
         } else {
             alert('Verification failed. Please try again.')
         }
@@ -58,7 +82,7 @@ export function MFASettings() {
         if (!confirm("Are you sure you want to disable this authentication method?")) return
         setLoading(true)
         await unenrollMFA(factorId)
-        loadFactors()
+        await loadFactors()
     }
 
     return (

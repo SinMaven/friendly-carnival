@@ -33,7 +33,7 @@ export const POST = Webhooks({
             const email = payload.data.customer?.email;
             if (email) {
                 // Determine user ID from email using Admin API
-                const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+                const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
                 const user = users.find(u => u.email === email);
                 if (user) {
                     userId = user.id;
@@ -134,9 +134,15 @@ export const POST = Webhooks({
             priceId = price?.id;
         }
 
-        const updateData: any = {
+        const updateData: {
+            status: string;
+            current_period_end: string | null;
+            updated_at: string;
+            price_id?: string;
+            polar_product_id?: string;
+        } = {
             status,
-            current_period_end: payload.data.currentPeriodEnd,
+            current_period_end: payload.data.currentPeriodEnd ? payload.data.currentPeriodEnd.toISOString() : null,
             updated_at: new Date().toISOString()
         };
 

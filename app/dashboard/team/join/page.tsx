@@ -1,8 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { JoinTeamForm } from '@/components/teams/join-team-form'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +45,7 @@ export default async function JoinTeamPage({ searchParams }: PageProps) {
             <JoinTeamForm initialCode={code} />
 
             <div className="mt-8 text-center text-sm text-muted-foreground">
-                <p>Don't have a code? Ask your team captain for an invite link.</p>
+                <p>Don&apos;t have a code? Ask your team captain for an invite link.</p>
             </div>
         </div>
     )

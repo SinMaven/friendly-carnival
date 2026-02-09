@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { Tables } from '@/lib/supabase/types';
+
 
 export type LeaderboardEntry = {
     rank: number;
@@ -31,15 +31,26 @@ export async function getLeaderboard(limit: number = 50, offset: number = 0): Pr
     }
 
     // Transform to leaderboard entries
-    return (profiles || []).map((profile: any, index: number) => ({
-        rank: offset + index + 1,
-        user_id: profile.id,
-        username: profile.username,
-        avatar_url: profile.avatar_url,
-        total_points: profile.total_points || 0,
-        total_solves: profile.total_solves || 0,
-        last_solve_at: profile.last_solve_at || null,
-    }));
+    interface ProfileData {
+        id: string
+        username: string
+        avatar_url: string | null
+        total_points: number | null
+        total_solves: number | null
+        last_solve_at: string | null
+    }
+    return (profiles || []).map((profile, index) => {
+        const p = profile as unknown as ProfileData
+        return {
+            rank: offset + index + 1,
+            user_id: p.id,
+            username: p.username,
+            avatar_url: p.avatar_url,
+            total_points: p.total_points || 0,
+            total_solves: p.total_solves || 0,
+            last_solve_at: p.last_solve_at || null,
+        }
+    });
 }
 
 export async function getUserStats(userId: string) {

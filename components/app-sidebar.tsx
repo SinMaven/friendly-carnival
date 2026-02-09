@@ -53,13 +53,21 @@ const accountNavItems = [
 
 import { Badge } from '@/components/ui/badge'
 
+interface Subscription {
+    prices?: {
+        products?: {
+            name?: string
+        } | null
+    } | null
+}
+
 export function AppSidebar({
     user,
     subscription,
     profile
 }: {
     user: { email: string; id: string };
-    subscription?: any;
+    subscription?: Subscription;
     profile?: { username?: string | null; avatar_url?: string | null; full_name?: string | null } | null;
 }) {
     const pathname = usePathname()

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Flag, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { submitFlag } from '@/features/challenges/actions/submit-flag'
 

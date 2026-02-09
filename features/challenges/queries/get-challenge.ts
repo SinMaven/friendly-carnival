@@ -96,12 +96,14 @@ export async function getChallenge(slug: string): Promise<ChallengeDetail | null
         .maybeSingle();
 
     // 5. Transform and Return
-    const tags = challenge.challenge_tags?.map((ct: any) => ct.tags) || [];
+    const tags = challenge.challenge_tags?.map((ct: { tags: unknown }) => ct.tags) || [];
     const assets = challenge.challenge_assets || [];
 
     // Destructure to remove relations from spread
     const {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         challenge_tags,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         challenge_assets: _assets,
         ...challengeData
     } = challenge;

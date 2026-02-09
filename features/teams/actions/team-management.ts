@@ -5,10 +5,10 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { nanoid } from 'nanoid'
 
-export type TeamActionResult = {
+export type TeamActionResult<T = unknown> = {
     success: boolean
     message: string
-    data?: any
+    data?: T
 }
 
 /**
@@ -191,7 +191,7 @@ export async function leaveTeam(): Promise<TeamActionResult> {
 export async function generateInviteCode(
     teamId: string,
     options?: { expiresInHours?: number; maxUses?: number }
-): Promise<TeamActionResult> {
+): Promise<TeamActionResult<{ code: string }>> {
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -233,7 +233,7 @@ export async function generateInviteCode(
         return { success: false, message: 'Failed to generate invite code' }
     }
 
-    return { success: true, message: 'Invite code generated', data: invite }
+    return { success: true, message: 'Invite code generated', data: { code: invite.code } }
 }
 
 /**

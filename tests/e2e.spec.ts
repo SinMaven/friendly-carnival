@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 // Use a unique suffix for this test run to avoid conflicts
 const uniqueId = Date.now().toString();
 const userEmail = `testuser_${uniqueId}@example.com`;
-const userPassword = 'TestPassword123!';
-const teamName = `Team_${uniqueId}`;
+// const userPassword = 'TestPassword123!';
+// const teamName = `Team_${uniqueId}`;
 
 test.describe('Full System E2E Workflow', () => {
 

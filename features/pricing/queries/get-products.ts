@@ -29,8 +29,8 @@ export async function getProducts() {
 
     if (prices) {
       data.forEach((p) => {
-        // @ts-ignore
-        p.prices = prices.filter((price) => price.product_id === p.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (p as any).prices = prices.filter((price) => price.product_id === p.id);
       });
     }
   }

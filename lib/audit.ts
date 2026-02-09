@@ -1,7 +1,7 @@
 'use server';
 
 import { supabaseAdminClient } from '@/lib/supabase/admin';
-import { TablesInsert } from '@/lib/supabase/types';
+
 
 /**
  * logs an audit event to the database.
@@ -13,6 +13,7 @@ export async function logAuditEvent(event: {
     event_type: string;
     actor_id?: string;
     target_resource_id?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload_diff?: any;
     severity?: 'info' | 'warning' | 'critical';
     ip_address?: string;
@@ -24,9 +25,11 @@ export async function logAuditEvent(event: {
             event_type: event.event_type,
             actor_id: event.actor_id,
             target_resource_id: event.target_resource_id,
-            payload_diff: event.payload_diff,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            payload_diff: event.payload_diff as any,
             severity: event.severity || 'info',
-            ip_address: event.ip_address as any, // Type casting for INET
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ip_address: event.ip_address as any // Type casting for INET
         });
     } catch (error) {
         console.error('Failed to log audit event:', error);

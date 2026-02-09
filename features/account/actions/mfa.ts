@@ -25,7 +25,7 @@ export async function enrollMFA() {
 export async function verifyMFA(factorId: string, code: string) {
     const supabase = await createSupabaseServerClient()
 
-    const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId,
         code,
     })

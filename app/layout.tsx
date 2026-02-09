@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CTF Platform",
   description: "Master cybersecurity through practice with real-world CTF challenges",
+};
+
+export const viewport: Viewport = {
+  themeColor: "dark",
 };
 
 export default function RootLayout({
@@ -15,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} antialiased`}>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className="antialiased font-sans">
         {children}
       </body>
     </html>

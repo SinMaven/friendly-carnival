@@ -43,7 +43,14 @@ export default async function TeamPage() {
     const isCaptain = team?.captain_id === user.id
 
     // Get team members if in a team
-    let members: { id: string, user_id: string, role: string, profile: any }[] = []
+    interface Profile {
+        id: string
+        username: string | null
+        avatar_url: string | null
+        total_points: number | null
+        total_solves: number | null
+    }
+    let members: { id: string, user_id: string, role: string, profile: Profile | null }[] = []
     let teamStats = { totalPoints: 0, totalSolves: 0 }
 
     if (team) {
@@ -63,12 +70,16 @@ export default async function TeamPage() {
             `)
             .eq('team_id', teamId)
 
-        members = (data || []).map(m => ({
-            id: m.id,
-            user_id: m.user_id,
-            role: m.role,
-            profile: m.profiles
-        }))
+        members = (data || []).map(m => {
+            // Supabase returns nested data as arrays, extract first element
+            const profileData = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles
+            return {
+                id: m.id as string,
+                user_id: m.user_id as string,
+                role: m.role as string,
+                profile: profileData as Profile | null
+            }
+        })
 
         // Calculate team stats
         teamStats = members.reduce((acc, m) => ({

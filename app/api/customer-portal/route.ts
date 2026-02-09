@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export const GET = CustomerPortal({
     accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    getCustomerId: async (_request) => {
+    getCustomerId: async () => {
         // Get the authenticated user
         const supabase = await createSupabaseServerClient();
         const { data: { user } } = await supabase.auth.getUser();

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useActionState, useEffect } from 'react'
+import { useState, useRef, useActionState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -25,14 +25,25 @@ export default function SignupPage() {
     const [password, setPassword] = useState('')
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const captchaRef = useRef<TurnstileCaptchaRef>(null)
+    const lastProcessedError = useRef<string | null>(null)
     const router = useRouter()
 
+    // Reset captcha on error using effect to avoid ref access during render
     useEffect(() => {
-        if (state?.error) {
-            captchaRef.current?.reset()
-            setCaptchaToken(null)
+        if (state?.error && state.error !== lastProcessedError.current) {
+            lastProcessedError.current = state.error
+            // Defer state updates to avoid cascading renders
+            const timer = setTimeout(() => {
+                captchaRef.current?.reset()
+                setCaptchaToken(null)
+            }, 0)
+            return () => clearTimeout(timer)
         }
     }, [state])
+
+    const handleSubmit = useCallback((formData: FormData) => {
+        formAction(formData)
+    }, [formAction])
 
     // If success, show confirmation UI
     if (state?.success) {
@@ -91,7 +102,7 @@ export default function SignupPage() {
                     </div>
 
                     {/* Email/Password Form */}
-                    <form action={formAction} className="grid gap-4">
+                    <form action={handleSubmit} className="grid gap-4">
                         {state?.error && (
                             <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 text-red-500 text-sm">
                                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
