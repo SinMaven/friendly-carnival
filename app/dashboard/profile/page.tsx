@@ -22,7 +22,7 @@ export default async function ProfilePage() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
     // Get team membership
     const { data: teamMembership } = await supabase

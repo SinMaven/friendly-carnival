@@ -16,7 +16,7 @@ export default async function SettingsPage() {
         .from('profiles')
         .select('notification_email, notification_solves, notification_leaderboard')
         .eq('id', user?.id)
-        .single()
+        .maybeSingle()
 
     const initialSettings = {
         notification_email: profile?.notification_email ?? true,

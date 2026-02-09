@@ -26,7 +26,7 @@ export default async function DashboardLayout({
         .from('profiles')
         .select('username, avatar_url, full_name')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
     return (
         <SidebarProvider>

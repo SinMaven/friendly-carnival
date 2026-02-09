@@ -35,7 +35,7 @@ export default async function TeamPage() {
             .from('teams')
             .select('*')
             .eq('id', teamId)
-            .single()
+            .maybeSingle()
 
         team = teamData
     }
