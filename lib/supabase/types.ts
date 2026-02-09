@@ -238,7 +238,7 @@ export type Database = {
           requires_container: boolean | null
           slug: string
           solve_count: number | null
-          state: Database["public"]["Enums"]["challenge_state"]
+          tier: 'free' | 'pro' | 'elite'
           title: string
           updated_at: string | null
         }

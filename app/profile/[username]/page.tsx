@@ -35,6 +35,15 @@ export default async function PublicProfilePage({ params }: { params: { username
         challenge: Array.isArray(s.challenge) ? s.challenge[0] : s.challenge as unknown as { points: number }
     }));
 
+    // Get team membership
+    const { data: teamMember } = await supabase
+        .from('team_members')
+        .select('team:teams(id, name, slug, avatar_url)')
+        .eq('user_id', profile.id)
+        .maybeSingle()
+
+    const team = teamMember?.team as unknown as { id: string, name: string, slug: string, avatar_url: string } | null
+
     return (
         <div className="container mx-auto py-10 max-w-4xl space-y-8">
             {/* Header */}
@@ -57,6 +66,16 @@ export default async function PublicProfilePage({ params }: { params: { username
                             </Button>
                         )}
                     </div>
+
+                    {team && (
+                        <div className="text-muted-foreground flex items-center justify-center md:justify-start gap-2">
+                            <span>Member of</span>
+                            <Link href={`/dashboard/team`} className="font-semibold text-primary hover:underline">
+                                {team.name}
+                            </Link>
+                        </div>
+                    )}
+
                     <p className="text-muted-foreground max-w-md">
                         {profile.bio || 'This user has not written a bio yet.'}
                     </p>

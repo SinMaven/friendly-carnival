@@ -97,7 +97,7 @@ export default async function ProfilePage() {
                         <div className="flex-1">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-12 w-12">
-                                    <AvatarImage src={team.avatar_url} />
+                                    <AvatarImage src={team.avatar_url || undefined} />
                                     <AvatarFallback>{team.name?.charAt(0).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>

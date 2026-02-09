@@ -10,6 +10,7 @@ import { Tables } from '@/lib/supabase/types';
 export type ChallengeWithTags = Tables<'challenges'> & {
     tags: Tables<'tags'>[];
     solved?: boolean;
+    locked?: boolean;
 };
 
 /**
@@ -55,8 +56,10 @@ export async function getChallenges(filters?: {
         return [];
     }
 
-    // Get user's solved challenges if logged in
+    // Get user's solved challenges and subscription if logged in
     let solvedChallengeIds: string[] = [];
+    let userTier: 'free' | 'pro' | 'elite' = 'free';
+
     if (userId) {
         const { data: solves } = await supabase
             .from('solves')
@@ -64,7 +67,28 @@ export async function getChallenges(filters?: {
             .eq('user_id', userId);
 
         solvedChallengeIds = solves?.map(s => s.challenge_id) || [];
+
+        // Check subscription
+        const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('price_id, status')
+            .eq('user_id', userId)
+            .in('status', ['active', 'trialing'])
+            .maybeSingle();
+
+        if (subscription) {
+            const PRO_PRICE_ID = 'af313f2d-e84e-4141-80ac-8ee93db480c2';
+            const ELITE_PRICE_ID = 'e1c95e50-35ed-4f77-8681-58c550b7885f';
+
+            if (subscription.price_id === ELITE_PRICE_ID) {
+                userTier = 'elite';
+            } else if (subscription.price_id === PRO_PRICE_ID) {
+                userTier = 'pro';
+            }
+        }
     }
+
+    const TIER_LEVELS = { free: 0, pro: 1, elite: 2 };
 
     // Transform data
     const result = (challenges || []).map(challenge => {
@@ -76,11 +100,15 @@ export async function getChallenges(filters?: {
             if (!hasTag) return null;
         }
 
+        const tier = (challenge.tier || 'free') as keyof typeof TIER_LEVELS;
+        const isLocked = TIER_LEVELS[userTier] < TIER_LEVELS[tier];
+
         return {
             ...challenge,
             challenge_tags: undefined,
             tags,
             solved: solvedChallengeIds.includes(challenge.id),
+            locked: isLocked
         };
     }).filter(Boolean) as ChallengeWithTags[];
 
