@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "CTF Platform",
@@ -18,9 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="antialiased font-sans">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
-
