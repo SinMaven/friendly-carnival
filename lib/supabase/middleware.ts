@@ -6,7 +6,7 @@ const publicRoutes = ['/login', '/signup', '/auth', '/pricing', '/', '/api/webho
 
 // Routes that are allowed even if email is not verified (but user is logged in)
 // We generally want to allow them to access the homepage, but force verification for app features.
-const unverifiedAllowedRoutes = ['/auth/verify-email', '/auth/callback', '/auth/signout', '/login', '/signup', '/']
+const unverifiedAllowedRoutes = ['/auth/verify-email', '/auth/callback', '/auth/signout', '/login', '/signup', '/', '/auth/mfa/verify']
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -59,6 +59,20 @@ export async function updateSession(request: NextRequest) {
     const isPublicRoute = publicRoutes.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     )
+
+    // Check for MFA requirements
+    // We need to check this BEFORE we check for !user, because if the user is logged in
+    // but at AAL1, they are "user" but we might need to upgrade them.
+    if (user && !isPublicRoute && pathname !== '/auth/mfa/verify') {
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+
+        if (aal && aal.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/auth/mfa/verify'
+            url.searchParams.set('next', pathname)
+            return NextResponse.redirect(url)
+        }
+    }
 
     // 1. No user and trying to access protected route
     if (!user && !isPublicRoute) {
