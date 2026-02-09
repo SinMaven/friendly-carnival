@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Global Error Boundary
@@ -16,8 +17,8 @@ export default function GlobalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Log to error tracking service
-        console.error('Global Application Error:', error);
+        // Log to Sentry
+        Sentry.captureException(error);
     }, [error]);
 
     return (
@@ -26,7 +27,7 @@ export default function GlobalError({
                 <div className="text-center space-y-6 max-w-md">
                     <h1 className="text-4xl font-bold text-destructive">Critical Error</h1>
                     <p className="text-lg text-muted-foreground">
-                        A critical error has occurred. Please refresh the page or try again later.
+                        A critical error has occurred. Our team has been notified. Please refresh the page or try again later.
                     </p>
                     <div className="space-y-3">
                         <button

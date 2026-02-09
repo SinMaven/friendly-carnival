@@ -57,6 +57,7 @@ const supportNavItems = [
 ]
 
 import { Badge } from '@/components/ui/badge'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 interface Subscription {
     prices?: {
@@ -104,6 +105,9 @@ export function AppSidebar({
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                <div className="px-2 py-2 flex justify-end">
+                    <NotificationBell />
+                </div>
             </SidebarHeader>
 
             <SidebarContent>
