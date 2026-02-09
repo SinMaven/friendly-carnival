@@ -4,15 +4,13 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { CreateTeamForm } from '@/components/teams/create-team-form'
 import { JoinTeamForm } from '@/components/teams/join-team-form'
 import { InviteCodeGenerator } from '@/components/teams/invite-code-generator'
 import { TeamMemberList } from '@/components/teams/team-member-list'
 import { LeaveTeamButton } from '@/components/teams/leave-team-button'
 import { TeamSettings } from '@/components/teams/team-settings'
-import { Crown, Trophy, Users } from 'lucide-react'
+import { Crown } from 'lucide-react'
 
 export default async function TeamPage() {
     const supabase = await createSupabaseServerClient()
@@ -25,26 +23,27 @@ export default async function TeamPage() {
     // Get user's team membership
     const { data: membership } = await supabase
         .from('team_members')
-        .select(`
-            id,
-            role,
-            teams (
-                id,
-                name,
-                slug,
-                avatar_url,
-                captain_id,
-                created_at
-            )
-        `)
+        .select('team_id, role')
         .eq('user_id', user.id)
         .maybeSingle()
 
-    const team = membership?.teams as any
+    let team = null
+    const teamId = membership?.team_id
+
+    if (teamId) {
+        const { data: teamData } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('id', teamId)
+            .single()
+
+        team = teamData
+    }
+
     const isCaptain = team?.captain_id === user.id
 
     // Get team members if in a team
-    let members: any[] = []
+    let members: { id: string, user_id: string, role: string, profile: any }[] = []
     let teamStats = { totalPoints: 0, totalSolves: 0 }
 
     if (team) {
@@ -62,7 +61,7 @@ export default async function TeamPage() {
                     total_solves
                 )
             `)
-            .eq('team_id', team.id)
+            .eq('team_id', teamId)
 
         members = (data || []).map(m => ({
             id: m.id,
@@ -138,14 +137,14 @@ export default async function TeamPage() {
                         members={members}
                         captainId={team.captain_id}
                         currentUserId={user.id}
-                        teamId={team.id}
+                        teamId={teamId}
                     />
 
                     {/* Captain Controls */}
                     {isCaptain && (
                         <>
-                            <InviteCodeGenerator teamId={team.id} />
-                            <TeamSettings teamId={team.id} teamName={team.name} />
+                            <InviteCodeGenerator teamId={teamId} />
+                            <TeamSettings teamId={teamId} teamName={team.name} />
                         </>
                     )}
 
