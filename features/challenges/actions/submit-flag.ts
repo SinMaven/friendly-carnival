@@ -4,13 +4,14 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { logChallengeEvent, logSecurityEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logChallengeEvent, logSecurityEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 import { checkRateLimit } from '@/lib/ratelimit';
 
 // Input validation schema
 const submitFlagSchema = z.object({
-  challengeId: z.string().uuid('Invalid challenge ID'),
-  flag: z.string().min(1, 'Flag is required').max(500, 'Flag is too long'),
+    challengeId: z.string().uuid('Invalid challenge ID'),
+    flag: z.string().min(1, 'Flag is required').max(500, 'Flag is too long'),
 });
 
 // SHA-256 hash function using Web Crypto API

@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
-import { logTeamEvent, AuditEventTypes } from '@/lib/audit-logger'
+import { logTeamEvent } from '@/lib/audit-logger'
+import { AuditEventTypes } from '@/lib/audit-events'
 import { checkRateLimit } from '@/lib/ratelimit'
 
 // Input validation schemas
@@ -317,7 +318,7 @@ export async function generateInviteCode(
     await logTeamEvent(AuditEventTypes.TEAM.INVITE_SENT, {
         userId: user.id,
         teamId,
-        payloadDiff: { 
+        payloadDiff: {
             expires_at: expiresAt,
             max_uses: options?.maxUses,
         },

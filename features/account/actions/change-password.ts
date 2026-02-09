@@ -3,7 +3,8 @@
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logAuthEvent, logSecurityEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logAuthEvent, logSecurityEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 export type ChangePasswordResult = {
     success: boolean

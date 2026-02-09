@@ -3,7 +3,8 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logUserEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logUserEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 export type UploadAvatarResult = {
     success: boolean
@@ -55,7 +56,7 @@ export async function uploadAvatar(formData: FormData): Promise<UploadAvatarResu
     // Validate filename (prevent path traversal)
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileExt = sanitizedFileName.split('.').pop()?.toLowerCase();
-    
+
     // Whitelist allowed extensions
     const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     if (!fileExt || !allowedExts.includes(fileExt)) {

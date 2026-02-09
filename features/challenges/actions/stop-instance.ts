@@ -3,7 +3,8 @@
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logContainerEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logContainerEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 export type StopInstanceResult = {
     success: boolean;

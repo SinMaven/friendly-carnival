@@ -20,17 +20,17 @@ import { AuditEventTypes, type AuditEventType, getEventSeverity, shouldLogEvent 
 async function getRequestContext(): Promise<{ ip?: string; userAgent?: string }> {
     try {
         const headersList = await headers();
-        
+
         // Get IP address from various header sources
         const forwardedFor = headersList.get('x-forwarded-for');
         const realIp = headersList.get('x-real-ip');
         const cfConnectingIp = headersList.get('cf-connecting-ip');
-        
+
         const ip = cfConnectingIp || realIp || forwardedFor?.split(',')[0]?.trim() || 'unknown';
-        
+
         // Get user agent
         const userAgent = headersList.get('user-agent') || undefined;
-        
+
         return { ip, userAgent };
     } catch {
         // Headers might not be available in all contexts
@@ -240,5 +240,6 @@ export async function logSecurityEvent(
     });
 }
 
-// Re-export event types for convenience
-export { AuditEventTypes };
+// Re-export event types for convenience - REMOVED to fix "use server" error
+// export { AuditEventTypes };
+

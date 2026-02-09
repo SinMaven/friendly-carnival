@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logUserEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logUserEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 // Validation schema
 const settingsSchema = z.object({
@@ -71,7 +72,7 @@ export async function updateSettings(settings: {
     const profileUpdates = Object.fromEntries(
         Object.entries(updates).filter(([, v]) => v !== undefined && v !== '')
     );
-    
+
     let message = 'Settings updated successfully!';
     let emailChanged = false;
 

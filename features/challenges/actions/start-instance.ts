@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logContainerEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logContainerEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 export type StartInstanceResult = {
     success: boolean;
@@ -58,9 +59,9 @@ export async function startInstance(challengeId: string): Promise<StartInstanceR
         .in('status', ['provisioning', 'running']);
 
     if (activeInstanceCount && activeInstanceCount >= MAX_INSTANCES_PER_USER) {
-        return { 
-            success: false, 
-            message: `You can only have ${MAX_INSTANCES_PER_USER} active containers at a time. Please stop an existing container first.` 
+        return {
+            success: false,
+            message: `You can only have ${MAX_INSTANCES_PER_USER} active containers at a time. Please stop an existing container first.`
         };
     }
 

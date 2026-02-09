@@ -5,7 +5,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logSecurityEvent, logUserEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logSecurityEvent, logUserEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 export type DeleteAccountResult = {
     success: boolean

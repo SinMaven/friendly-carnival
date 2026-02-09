@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logUserEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logUserEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 // Validation schema
 const signupSchema = z.object({

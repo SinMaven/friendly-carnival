@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { checkRateLimit } from '@/lib/ratelimit';
-import { logAuthEvent, logSecurityEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { logAuthEvent, logSecurityEvent } from '@/lib/audit-logger';
+import { AuditEventTypes } from '@/lib/audit-events';
 
 // Validation schemas
 const factorIdSchema = z.string().uuid('Invalid factor ID');
