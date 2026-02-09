@@ -1,5 +1,7 @@
 import { CustomerPortal } from "@polar-sh/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { checkRateLimit, getRateLimitIdentifier } from '@/lib/ratelimit';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/customer-portal
@@ -7,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * Redirects authenticated users to their Polar customer portal.
  * Users can view orders, subscriptions, and manage their billing.
  */
-export const GET = CustomerPortal({
+const customerPortalHandler = CustomerPortal({
     accessToken: process.env.POLAR_ACCESS_TOKEN!,
     getCustomerId: async () => {
         // Get the authenticated user
@@ -34,3 +36,29 @@ export const GET = CustomerPortal({
     returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/subscription`,
     server: (process.env.POLAR_SERVER as 'sandbox' | 'production') || 'production',
 });
+
+export async function GET(request: NextRequest) {
+    // Rate limiting: 10 requests per minute
+    const identifier = getRateLimitIdentifier(request.headers);
+    const { success: rateLimitOk } = await checkRateLimit('standard', `portal:${identifier}`);
+    
+    if (!rateLimitOk) {
+        return NextResponse.json(
+            { error: 'Too many requests. Please try again later.' },
+            { 
+                status: 429,
+                headers: { 'Retry-After': '60' }
+            }
+        );
+    }
+
+    try {
+        return await customerPortalHandler(request);
+    } catch (error) {
+        console.error('Customer Portal Error:', error);
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
+}

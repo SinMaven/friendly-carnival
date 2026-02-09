@@ -1,5 +1,7 @@
 import { Webhooks } from '@polar-sh/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getRateLimitIdentifier } from '@/lib/ratelimit';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Initialize Supabase Admin Client
 const supabaseAdmin = createClient(
@@ -14,12 +16,9 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * POST /api/webhooks/polar
- * 
- * Handles Polar.sh webhook events using the official Supabase integration.
- * Uses Service Role Key to bypass RLS and access auth.users.
+ * Webhook handler with Polar SDK
  */
-export const POST = Webhooks({
+const webhookHandler = Webhooks({
     webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
 
     // Handle new subscription
@@ -86,7 +85,7 @@ export const POST = Webhooks({
                 user_id: userId,
                 polar_subscription_id: payload.data.id,
                 polar_product_id: payload.data.productId,
-                polar_customer_id: payload.data.customerId, // Store customer ID for portal access
+                polar_customer_id: payload.data.customerId,
                 price_id: priceId,
                 status: 'active',
                 current_period_start: payload.data.currentPeriodStart,
@@ -157,7 +156,6 @@ export const POST = Webhooks({
             .eq('polar_subscription_id', payload.data.id);
     },
 
-
     // Handle cancellations
     onSubscriptionCanceled: async (payload) => {
         console.log('Subscription canceled:', payload.data.id);
@@ -191,3 +189,34 @@ export const POST = Webhooks({
         // Handle one-time purchase logic here if needed
     }
 });
+
+/**
+ * POST /api/webhooks/polar
+ * 
+ * Handles Polar.sh webhook events using the official Supabase integration.
+ * Uses Service Role Key to bypass RLS and access auth.users.
+ * Includes rate limiting to prevent webhook abuse.
+ */
+export async function POST(request: NextRequest) {
+    // Rate limiting: 100 webhook requests per minute (webhooks can be bursty)
+    const identifier = getRateLimitIdentifier(request.headers);
+    const { success: rateLimitOk } = await checkRateLimit('relaxed', `webhook:${identifier}`);
+    
+    if (!rateLimitOk) {
+        return NextResponse.json(
+            { error: 'Too many requests' },
+            { status: 429, headers: { 'Retry-After': '60' } }
+        );
+    }
+
+    try {
+        return await webhookHandler(request);
+    } catch (error) {
+        console.error('Webhook Error:', error);
+        // Return 500 to trigger retry from Polar
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
+}

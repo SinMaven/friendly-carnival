@@ -1,19 +1,32 @@
 'use server';
 
+import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/ratelimit';
+import { logContainerEvent, AuditEventTypes } from '@/lib/audit-logger';
 
 export type StopInstanceResult = {
     success: boolean;
     message: string;
 };
 
+// Validation schema
+const instanceIdSchema = z.string().uuid('Invalid instance ID');
+
 /**
  * Stops and removes a container instance.
+ * Rate limited to prevent abuse.
  * 
  * @param instanceId - The UUID of the container instance
  * @returns {Promise<StopInstanceResult>} Result of the stop request
  */
 export async function stopInstance(instanceId: string): Promise<StopInstanceResult> {
+    // Validate input
+    const validation = instanceIdSchema.safeParse(instanceId);
+    if (!validation.success) {
+        return { success: false, message: 'Invalid instance ID' };
+    }
+
     const supabase = await createSupabaseServerClient();
 
     // 1. Auth Check
@@ -24,7 +37,13 @@ export async function stopInstance(instanceId: string): Promise<StopInstanceResu
         return { success: false, message: 'Unauthorized' };
     }
 
-    // 2. Verify Ownership and Existence
+    // 2. Rate limiting: 20 stops per hour per user
+    const { success: rateLimitOk } = await checkRateLimit('relaxed', `container:stop:${userId}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many stop attempts. Please try again later.' };
+    }
+
+    // 3. Verify Ownership and Existence
     const { data: instance } = await supabase
         .from('container_instances')
         .select('*')
@@ -36,10 +55,10 @@ export async function stopInstance(instanceId: string): Promise<StopInstanceResu
         return { success: false, message: 'Instance not found or unauthorized.' };
     }
 
-    // 3. Stop Logic (Mock for MVP)
+    // 4. Stop Logic (Mock for MVP)
     // In production, call orchestrator to kill task.
 
-    // 4. Update DB Status
+    // 5. Update DB Status
     const { error } = await supabase
         .from('container_instances')
         .update({
@@ -53,6 +72,13 @@ export async function stopInstance(instanceId: string): Promise<StopInstanceResu
         console.error('Error stopping instance:', error);
         return { success: false, message: 'Failed to update instance status.' };
     }
+
+    // 6. Audit log
+    await logContainerEvent(AuditEventTypes.CONTAINER.STOPPED, {
+        userId,
+        containerId: instanceId,
+        challengeId: instance.challenge_id,
+    });
 
     return { success: true, message: 'Instance stopped successfully.' };
 }

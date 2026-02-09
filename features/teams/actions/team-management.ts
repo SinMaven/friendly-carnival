@@ -4,7 +4,15 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { nanoid } from 'nanoid'
+import { z } from 'zod'
 import { logTeamEvent, AuditEventTypes } from '@/lib/audit-logger'
+import { checkRateLimit } from '@/lib/ratelimit'
+
+// Input validation schemas
+const teamNameSchema = z.string().min(1, 'Team name is required').max(50, 'Team name must be under 50 characters').regex(/^[a-zA-Z0-9\s\-_]+$/, 'Team name contains invalid characters');
+const inviteCodeSchema = z.string().length(8, 'Invalid invite code').regex(/^[A-Z0-9]+$/, 'Invalid invite code format');
+const teamIdSchema = z.string().uuid('Invalid team ID');
+const memberIdSchema = z.string().uuid('Invalid member ID');
 
 export type TeamActionResult<T = unknown> = {
     success: boolean
@@ -16,11 +24,23 @@ export type TeamActionResult<T = unknown> = {
  * Creates a new team with the current user as captain.
  */
 export async function createTeam(name: string): Promise<TeamActionResult> {
+    // Validate input
+    const validation = teamNameSchema.safeParse(name);
+    if (!validation.success) {
+        return { success: false, message: validation.error.issues[0].message };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 5 team creations per hour per user
+    const { success: rateLimitOk } = await checkRateLimit('relaxed', `team:create:${user.id}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many team creation attempts. Please try again later.' };
     }
 
     // Check if user is already in a team
@@ -86,11 +106,23 @@ export async function createTeam(name: string): Promise<TeamActionResult> {
  * Joins a team using an invite code.
  */
 export async function joinTeam(inviteCode: string): Promise<TeamActionResult> {
+    // Validate input
+    const validation = inviteCodeSchema.safeParse(inviteCode);
+    if (!validation.success) {
+        return { success: false, message: validation.error.issues[0].message };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 10 join attempts per minute per user
+    const { success: rateLimitOk } = await checkRateLimit('standard', `team:join:${user.id}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many join attempts. Please try again later.' };
     }
 
     // Check if user is already in a team
@@ -208,6 +240,12 @@ export async function leaveTeam(): Promise<TeamActionResult> {
     return { success: true, message: 'Successfully left the team' }
 }
 
+// Options schema
+const inviteOptionsSchema = z.object({
+    expiresInHours: z.number().int().min(1).max(720).optional(), // Max 30 days
+    maxUses: z.number().int().min(1).max(100).optional(),
+});
+
 /**
  * Generates a new invite code for the team.
  * Only captains can generate invite codes.
@@ -216,11 +254,29 @@ export async function generateInviteCode(
     teamId: string,
     options?: { expiresInHours?: number; maxUses?: number }
 ): Promise<TeamActionResult<{ code: string }>> {
+    // Validate inputs
+    const teamIdValidation = teamIdSchema.safeParse(teamId);
+    if (!teamIdValidation.success) {
+        return { success: false, message: 'Invalid team ID' };
+    }
+    if (options) {
+        const optionsValidation = inviteOptionsSchema.safeParse(options);
+        if (!optionsValidation.success) {
+            return { success: false, message: optionsValidation.error.issues[0].message };
+        }
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 10 invite generations per hour per team
+    const { success: rateLimitOk } = await checkRateLimit('standard', `team:invite:${teamId}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many invite code generations. Please try again later.' };
     }
 
     // Verify user is team captain
@@ -275,11 +331,27 @@ export async function generateInviteCode(
  * Only captains can update team settings.
  */
 export async function updateTeamName(teamId: string, name: string): Promise<TeamActionResult> {
+    // Validate inputs
+    const teamIdValidation = teamIdSchema.safeParse(teamId);
+    if (!teamIdValidation.success) {
+        return { success: false, message: 'Invalid team ID' };
+    }
+    const nameValidation = teamNameSchema.safeParse(name);
+    if (!nameValidation.success) {
+        return { success: false, message: nameValidation.error.issues[0].message };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 5 name updates per hour per team
+    const { success: rateLimitOk } = await checkRateLimit('relaxed', `team:update:${teamId}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many update attempts. Please try again later.' };
     }
 
     // Verify user is team captain
@@ -324,11 +396,23 @@ export async function updateTeamName(teamId: string, name: string): Promise<Team
  * Only captains can delete the team.
  */
 export async function deleteTeam(teamId: string): Promise<TeamActionResult> {
+    // Validate input
+    const teamIdValidation = teamIdSchema.safeParse(teamId);
+    if (!teamIdValidation.success) {
+        return { success: false, message: 'Invalid team ID' };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 3 delete attempts per hour per user
+    const { success: rateLimitOk } = await checkRateLimit('strict', `team:delete:${user.id}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many delete attempts. Please try again later.' };
     }
 
     // Verify user is team captain
@@ -370,11 +454,27 @@ export async function deleteTeam(teamId: string): Promise<TeamActionResult> {
  * Only captains can remove members. Captains cannot be removed.
  */
 export async function removeMember(memberId: string, teamId: string): Promise<TeamActionResult> {
+    // Validate inputs
+    const memberIdValidation = memberIdSchema.safeParse(memberId);
+    if (!memberIdValidation.success) {
+        return { success: false, message: 'Invalid member ID' };
+    }
+    const teamIdValidation = teamIdSchema.safeParse(teamId);
+    if (!teamIdValidation.success) {
+        return { success: false, message: 'Invalid team ID' };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 10 member removals per hour per team
+    const { success: rateLimitOk } = await checkRateLimit('standard', `team:remove:${teamId}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many member removal attempts. Please try again later.' };
     }
 
     // Verify user is team captain
@@ -434,11 +534,27 @@ export async function removeMember(memberId: string, teamId: string): Promise<Te
  * Uses admin client to ensure atomic-like updates without RLS interference.
  */
 export async function transferOwnership(memberId: string, teamId: string): Promise<TeamActionResult> {
+    // Validate inputs
+    const memberIdValidation = memberIdSchema.safeParse(memberId);
+    if (!memberIdValidation.success) {
+        return { success: false, message: 'Invalid member ID' };
+    }
+    const teamIdValidation = teamIdSchema.safeParse(teamId);
+    if (!teamIdValidation.success) {
+        return { success: false, message: 'Invalid team ID' };
+    }
+
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user?.id) {
         return { success: false, message: 'Unauthorized' }
+    }
+
+    // Rate limiting: 3 ownership transfers per day per team
+    const { success: rateLimitOk } = await checkRateLimit('strict', `team:transfer:${teamId}`);
+    if (!rateLimitOk) {
+        return { success: false, message: 'Too many ownership transfer attempts. Please try again later.' };
     }
 
     if (!process.env.SUPABASE_SECRET_KEY) {

@@ -1,7 +1,21 @@
 'use server'
 
+import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
+import { checkRateLimit } from '@/lib/ratelimit';
+import { logUserEvent, AuditEventTypes } from '@/lib/audit-logger';
+
+// Validation schema
+const signupSchema = z.object({
+    email: z.string().email('Invalid email address').min(1, 'Email is required'),
+    password: z.string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(128, 'Password too long')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+});
 
 export async function signup(
     _prevState: unknown,
@@ -13,9 +27,26 @@ export async function signup(
     const headerList = await headers()
     const origin = headerList.get('origin')
 
-    // Default to a safe fallback if origin is missing (e.g. strict server environment)
-    // but usually in Next.js it's available.
-    // Default to a safe fallback
+    // Get IP for rate limiting
+    const forwardedFor = headerList.get('x-forwarded-for');
+    const realIp = headerList.get('x-real-ip');
+    const cfIp = headerList.get('cf-connecting-ip');
+    const ip = cfIp || realIp || forwardedFor?.split(',')[0]?.trim() || 'unknown';
+
+    // Rate limiting: 5 signup attempts per hour per IP
+    const { success: rateLimitOk } = await checkRateLimit('standard', `signup:${ip}`);
+    if (!rateLimitOk) {
+        return { error: 'Too many signup attempts. Please try again later.', success: false, email: null }
+    }
+
+    // Validate input
+    const validation = signupSchema.safeParse({ email, password });
+    if (!validation.success) {
+        const message = validation.error.issues[0]?.message || 'Invalid input';
+        return { error: message, success: false, email: null }
+    }
+
+    // Default to a safe fallback if origin is missing
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || origin || 'http://localhost:3000'
 
     if (!email || !password) {
@@ -26,8 +57,8 @@ export async function signup(
     const supabase = await createSupabaseServerClient()
 
     const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
         options: {
             emailRedirectTo: `${siteUrl}/auth/callback`,
             captchaToken: captchaToken === 'development-token' ? undefined : captchaToken,
@@ -46,5 +77,13 @@ export async function signup(
         return { error: error.message, success: false, email: null }
     }
 
-    return { success: true, email, error: null }
+    // Audit log
+    if (data.user) {
+        await logUserEvent(AuditEventTypes.USER.CREATED, {
+            userId: data.user.id,
+            payloadDiff: { email: validation.data.email },
+        });
+    }
+
+    return { success: true, email: validation.data.email, error: null }
 }

@@ -1,9 +1,17 @@
 'use server';
 
 import { headers } from 'next/headers';
+import { z } from 'zod';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { logChallengeEvent, logSecurityEvent, AuditEventTypes } from '@/lib/audit-logger';
+import { checkRateLimit } from '@/lib/ratelimit';
+
+// Input validation schema
+const submitFlagSchema = z.object({
+  challengeId: z.string().uuid('Invalid challenge ID'),
+  flag: z.string().min(1, 'Flag is required').max(500, 'Flag is too long'),
+});
 
 // SHA-256 hash function using Web Crypto API
 async function sha256(message: string): Promise<string> {
@@ -32,6 +40,15 @@ export async function submitFlag(
     challengeId: string,
     flag: string
 ): Promise<SubmitFlagResult> {
+    // Validate inputs
+    const validation = submitFlagSchema.safeParse({ challengeId, flag });
+    if (!validation.success) {
+        return {
+            success: false,
+            message: validation.error.issues.map((e: { message: string }) => e.message).join(', ')
+        };
+    }
+
     const supabase = await createSupabaseServerClient();
     const headerList = await headers();
     const ip = headerList.get('x-forwarded-for') || 'unknown';
@@ -45,7 +62,23 @@ export async function submitFlag(
         return { success: false, message: 'You must be logged in to submit flags' };
     }
 
-    // 2. Check if already solved (Idempotency)
+    // 2. Redis-based rate limiting (primary)
+    const { success: rateLimitOk } = await checkRateLimit('flagSubmission', `flag:${userId}:${challengeId}`);
+    if (!rateLimitOk) {
+        await logSecurityEvent(AuditEventTypes.SECURITY.RATE_LIMIT_EXCEEDED, {
+            userId,
+            payloadDiff: {
+                context: 'flag_submission_redis',
+                challenge_id: challengeId,
+            },
+        });
+        return {
+            success: false,
+            message: 'Too many attempts. Please wait a minute before trying again.'
+        };
+    }
+
+    // 3. Check if already solved (Idempotency)
     const { data: existingSolve } = await supabase
         .from('solves')
         .select('id')
@@ -58,32 +91,6 @@ export async function submitFlag(
             success: false,
             message: 'You have already solved this challenge!',
             already_solved: true
-        };
-    }
-
-    // 3. Rate limiting (Anti-Bruteforce)
-    // Max 10 attempts per minute per challenge
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-    const { count: recentSubmissions } = await supabase
-        .from('submissions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('challenge_id', challengeId)
-        .gte('created_at', oneMinuteAgo);
-
-    if (recentSubmissions && recentSubmissions >= 10) {
-        // Log security event for rate limiting
-        await logSecurityEvent(AuditEventTypes.SECURITY.RATE_LIMIT_EXCEEDED, {
-            userId,
-            payloadDiff: {
-                context: 'flag_submission',
-                challenge_id: challengeId,
-                attempts: recentSubmissions,
-            },
-        });
-        return {
-            success: false,
-            message: 'Too many attempts. Please wait a minute before trying again.'
         };
     }
 

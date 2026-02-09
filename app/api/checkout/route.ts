@@ -1,5 +1,6 @@
 import { Checkout } from "@polar-sh/supabase";
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { checkRateLimit, getRateLimitIdentifier } from '@/lib/ratelimit';
 
 /**
  * GET /api/checkout
@@ -22,6 +23,24 @@ const checkoutHandler = Checkout({
 });
 
 export async function GET(request: Request) {
+    // Rate limiting: 10 checkout attempts per minute
+    const headers = request.headers;
+    const identifier = getRateLimitIdentifier(headers);
+    const { success: rateLimitOk } = await checkRateLimit('standard', `checkout:${identifier}`);
+    
+    if (!rateLimitOk) {
+        return new Response(
+            JSON.stringify({ error: 'Too many requests. Please try again later.' }), 
+            { 
+                status: 429,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Retry-After': '60'
+                } 
+            }
+        );
+    }
+
     if (!process.env.POLAR_ACCESS_TOKEN) {
         console.error('Missing POLAR_ACCESS_TOKEN');
         return new Response('Configuration Error', { status: 500 });
@@ -63,12 +82,9 @@ export async function GET(request: Request) {
             url.searchParams.set('metadata', JSON.stringify(metadata));
 
             // Create a new request with the updated URL
-            // We need to clone the original request but change the URL
             req = new Request(url.toString(), {
                 headers: request.headers,
                 method: request.method,
-                // body: request.body, // GET requests usually don't have body
-                // signals, etc
             });
         }
 

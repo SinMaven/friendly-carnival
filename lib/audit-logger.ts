@@ -9,6 +9,9 @@ import { AuditEventTypes, type AuditEventType, getEventSeverity, shouldLogEvent 
  * 
  * Provides comprehensive audit logging with automatic IP capture,
  * severity classification, and retention management.
+ * 
+ * PRODUCTION NOTE: In production, configure a fallback logging mechanism
+ * (e.g., Sentry, CloudWatch, or file logging) in case database logging fails.
  */
 
 /**
@@ -33,6 +36,20 @@ async function getRequestContext(): Promise<{ ip?: string; userAgent?: string }>
         // Headers might not be available in all contexts
         return {};
     }
+}
+
+/**
+ * Fallback logging mechanism when database logging fails
+ * In production, this should send to an external service
+ */
+function fallbackLogError(error: unknown, eventType: AuditEventType): void {
+    // Log to console for now - replace with external service in production
+    // Examples: Sentry.captureException, CloudWatch, or file logging
+    console.error('[AUDIT LOG FAILED]', {
+        timestamp: new Date().toISOString(),
+        eventType,
+        error: error instanceof Error ? error.message : String(error),
+    });
 }
 
 /**
@@ -64,7 +81,7 @@ export async function logAuditEvent(
     const { ip, userAgent } = await getRequestContext();
 
     try {
-        await supabaseAdminClient.from('audit_logs').insert({
+        const { error } = await supabaseAdminClient.from('audit_logs').insert({
             event_type: eventType,
             actor_id: actorId,
             target_resource_id: targetResourceId,
@@ -75,10 +92,14 @@ export async function logAuditEvent(
             ip_address: ip as any,
             user_agent: userAgent,
         });
+
+        if (error) {
+            throw error;
+        }
     } catch (error) {
-        console.error('Failed to log audit event:', error);
         // Don't throw - audit failure shouldn't crash the application
-        // In production, you might want to send this to a fallback logging service
+        // But do log the failure for ops team visibility
+        fallbackLogError(error, eventType);
     }
 }
 
