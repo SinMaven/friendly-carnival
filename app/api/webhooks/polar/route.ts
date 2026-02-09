@@ -1,10 +1,23 @@
 import { Webhooks } from '@polar-sh/supabase';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase Admin Client
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
+);
 
 /**
  * POST /api/webhooks/polar
  * 
  * Handles Polar.sh webhook events using the official Supabase integration.
+ * Uses Service Role Key to bypass RLS and access auth.users.
  */
 export const POST = Webhooks({
     webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
@@ -13,28 +26,44 @@ export const POST = Webhooks({
     onSubscriptionCreated: async (payload) => {
         console.log('Subscription created:', payload.data.id);
 
-        const supabase = await createSupabaseServerClient();
-        const email = payload.data.customer?.email;
+        let userId = payload.data.metadata?.user_id;
 
-        if (!email) {
-            console.error('No customer email in subscription payload');
+        // Fallback: Find user by email if no user_id in metadata
+        if (!userId) {
+            const email = payload.data.customer?.email;
+            if (email) {
+                // Determine user ID from email using Admin API
+                const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+                const user = users.find(u => u.email === email);
+                if (user) {
+                    userId = user.id;
+                } else {
+                    console.error('No user found for email:', email);
+                }
+            } else {
+                console.error('No customer email or user_id in subscription payload');
+            }
+        }
+
+        if (!userId) {
+            console.error('Could not determine user for subscription:', payload.data.id);
             return;
         }
 
-        // Find user by email
-        const { data: profile } = await supabase
+        // Find match in profiles (to ensure they have a profile too)
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('id')
-            .eq('email', email)
+            .eq('id', userId)
             .single();
 
         if (!profile) {
-            console.error('No profile found for email:', email);
+            console.error('No profile found for user:', userId);
             return;
         }
 
         // Find the local product that matches this Polar product
-        const { data: product } = await supabase
+        const { data: product } = await supabaseAdmin
             .from('products')
             .select('id')
             .eq('metadata->>polar_product_id', payload.data.productId)
@@ -42,7 +71,7 @@ export const POST = Webhooks({
 
         let priceId = null;
         if (product) {
-            const { data: price } = await supabase
+            const { data: price } = await supabaseAdmin
                 .from('prices')
                 .select('id')
                 .eq('product_id', product.id)
@@ -51,10 +80,10 @@ export const POST = Webhooks({
         }
 
         // Update subscription status
-        await supabase
+        await supabaseAdmin
             .from('subscriptions')
             .upsert({
-                user_id: profile.id,
+                user_id: userId,
                 polar_subscription_id: payload.data.id,
                 polar_product_id: payload.data.productId,
                 polar_customer_id: payload.data.customerId, // Store customer ID for portal access
@@ -67,16 +96,14 @@ export const POST = Webhooks({
                 onConflict: 'user_id'
             });
 
-        console.log('Subscription saved for user:', profile.id);
+        console.log('Subscription saved for user:', userId);
     },
 
     // Handle subscription becoming active
     onSubscriptionActive: async (payload) => {
         console.log('Subscription active:', payload.data.id);
 
-        const supabase = await createSupabaseServerClient();
-
-        await supabase
+        await supabaseAdmin
             .from('subscriptions')
             .update({
                 status: 'active',
@@ -88,13 +115,12 @@ export const POST = Webhooks({
     // Handle subscription updates
     onSubscriptionUpdated: async (payload) => {
         console.log('Subscription updated:', payload.data.id);
+        const status = payload.data.status === 'active' ? 'active' : 'canceled';
 
-        const supabase = await createSupabaseServerClient();
-
-        await supabase
+        await supabaseAdmin
             .from('subscriptions')
             .update({
-                status: payload.data.status === 'active' ? 'active' : 'canceled',
+                status,
                 current_period_end: payload.data.currentPeriodEnd,
                 updated_at: new Date().toISOString()
             })
@@ -105,9 +131,7 @@ export const POST = Webhooks({
     onSubscriptionCanceled: async (payload) => {
         console.log('Subscription canceled:', payload.data.id);
 
-        const supabase = await createSupabaseServerClient();
-
-        await supabase
+        await supabaseAdmin
             .from('subscriptions')
             .update({
                 status: 'canceled',
@@ -121,9 +145,7 @@ export const POST = Webhooks({
     onSubscriptionRevoked: async (payload) => {
         console.log('Subscription revoked:', payload.data.id);
 
-        const supabase = await createSupabaseServerClient();
-
-        await supabase
+        await supabaseAdmin
             .from('subscriptions')
             .update({
                 status: 'revoked',

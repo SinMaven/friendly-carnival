@@ -4,11 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Save, Bell, Shield, User, Trash2 } from 'lucide-react'
+import { Loader2, Save, Bell, Shield, Trash2 } from 'lucide-react'
 import { updateSettings } from '@/features/account/actions/update-settings'
-import { AvatarUploader } from './avatar-uploader'
 import { ChangePasswordForm } from './change-password-form'
 import { MFASettings } from './mfa-settings'
 import { DeleteAccountButton } from './delete-account-button'
@@ -19,33 +16,17 @@ interface SettingsFormProps {
         notification_solves: boolean
         notification_leaderboard: boolean
     }
-    user: {
-        id: string
-        email: string
-        avatar_url?: string | null
-        full_name?: string | null
-        username: string
-        bio?: string | null
-        website?: string | null
-        mfa_enabled: boolean
-    }
+    userEmail: string
 }
 
-export function SettingsForm({ initialSettings, user }: SettingsFormProps) {
+export function SettingsForm({ initialSettings, userEmail }: SettingsFormProps) {
     const [isPending, startTransition] = useTransition()
     const [settings, setSettings] = useState(initialSettings)
-    const [profileData, setProfileData] = useState({
-        username: user.username,
-        full_name: user.full_name || '',
-        email: user.email,
-        bio: user.bio || '',
-        website: user.website || '',
-    })
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
     const handleSave = () => {
         startTransition(async () => {
-            const result = await updateSettings({ ...settings, ...profileData })
+            const result = await updateSettings(settings)
             if (!result.success) {
                 setMessage({ type: 'error', text: result.message })
             } else {
@@ -57,81 +38,6 @@ export function SettingsForm({ initialSettings, user }: SettingsFormProps) {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        Profile
-                    </CardTitle>
-                    <CardDescription>Manage your public profile</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Profile Picture</Label>
-                        <AvatarUploader
-                            currentUrl={user.avatar_url}
-                            fallback={user.email.charAt(0).toUpperCase()}
-                        />
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
-                            <Input
-                                id="username"
-                                placeholder="Username"
-                                value={profileData.username}
-                                onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="full_name">Full Name</Label>
-                            <Input
-                                id="full_name"
-                                placeholder="Full Name"
-                                value={profileData.full_name}
-                                onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="Email Address"
-                            value={profileData.email}
-                            onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground">Changing your email will require verification.</p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                            id="bio"
-                            placeholder="Tell us about yourself..."
-                            value={profileData.bio}
-                            onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                            className="resize-none"
-                            rows={3}
-                        />
-                        <p className="text-xs text-muted-foreground">Brief description for your profile.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="website">Website</Label>
-                        <Input
-                            id="website"
-                            type="url"
-                            placeholder="https://yourwebsite.com"
-                            value={profileData.website}
-                            onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -174,6 +80,19 @@ export function SettingsForm({ initialSettings, user }: SettingsFormProps) {
                             onCheckedChange={(checked) => setSettings({ ...settings, notification_leaderboard: checked })}
                         />
                     </div>
+
+                    {message && (
+                        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-4">
+                        <Button onClick={handleSave} disabled={isPending}>
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            Save Notifications
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -202,19 +121,6 @@ export function SettingsForm({ initialSettings, user }: SettingsFormProps) {
                 </CardContent>
             </Card>
 
-            {message && (
-                <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                    {message.text}
-                </div>
-            )}
-
-            <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={isPending}>
-                    {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                    Save Notifications
-                </Button>
-            </div>
-
             <Card className="border-destructive/20">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-destructive">
@@ -229,7 +135,7 @@ export function SettingsForm({ initialSettings, user }: SettingsFormProps) {
                             <p className="font-medium">Delete Account</p>
                             <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
                         </div>
-                        <DeleteAccountButton userEmail={user.email} />
+                        <DeleteAccountButton userEmail={userEmail} />
                     </div>
                 </CardContent>
             </Card>

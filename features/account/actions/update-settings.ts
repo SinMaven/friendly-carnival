@@ -4,9 +4,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function updateSettings(settings: {
-    notification_email: boolean;
-    notification_solves: boolean;
-    notification_leaderboard: boolean;
+    notification_email?: boolean;
+    notification_solves?: boolean;
+    notification_leaderboard?: boolean;
     bio?: string;
     website?: string;
     username?: string;
@@ -20,7 +20,12 @@ export async function updateSettings(settings: {
         throw new Error('Unauthorized');
     }
 
-    const { email, ...profileUpdates } = settings;
+    const { email, ...updates } = settings;
+
+    // Remove undefined values
+    const profileUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
     let message = 'Settings updated successfully!';
 
     // Update email if changed

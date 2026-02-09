@@ -81,12 +81,21 @@ export default async function LandingPage() {
                         Sharpen your skills with real-world security challenges.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" asChild>
-                            <Link href="/dashboard/challenges">
-                                Start Hacking
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
+                        {user ? (
+                            <Button size="lg" asChild>
+                                <Link href="/dashboard">
+                                    Go to Dashboard
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Button size="lg" asChild>
+                                <Link href="/dashboard/challenges">
+                                    Start Hacking
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        )}
                         <Button size="lg" variant="outline" asChild>
                             <Link href="/pricing">View Pricing</Link>
                         </Button>

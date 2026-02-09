@@ -107,6 +107,15 @@ export async function submitFlag(
         return { success: false, message: 'Incorrect flag. Try again!' };
     }
 
+    // 5.5. Get User Team (for team scoring)
+    const { data: teamMember } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    const teamId = teamMember?.team_id;
+
     // 6. Award Points (Game Logic)
     // Fetch current challenge state for points
     const { data: challenge } = await supabase
@@ -129,6 +138,7 @@ export async function submitFlag(
     const { error: solveError } = await supabase.from('solves').insert({
         user_id: userId,
         challenge_id: challengeId,
+        team_id: teamId, // Add team context
         points_awarded: pointsAwarded,
         is_first_blood: isFirstBlood,
     });
@@ -145,6 +155,7 @@ export async function submitFlag(
         console.error('Error recording solve:', solveError);
         return { success: false, message: 'Error recording solve. Please try again.' };
     }
+
 
     return {
         success: true,

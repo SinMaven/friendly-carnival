@@ -53,7 +53,15 @@ const accountNavItems = [
 
 import { Badge } from '@/components/ui/badge'
 
-export function AppSidebar({ user, subscription }: { user: { email: string; id: string }; subscription?: any }) {
+export function AppSidebar({
+    user,
+    subscription,
+    profile
+}: {
+    user: { email: string; id: string };
+    subscription?: any;
+    profile?: { username?: string | null; avatar_url?: string | null; full_name?: string | null } | null;
+}) {
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createSupabaseBrowserClient()
@@ -133,13 +141,13 @@ export function AppSidebar({ user, subscription }: { user: { email: string; id: 
                                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
                                     <Avatar className="h-8 w-8 ">
-                                        <AvatarImage src={undefined} alt={user.email} />
+                                        <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || user.email} />
                                         <AvatarFallback className="">
-                                            {user.email?.charAt(0).toUpperCase()}
+                                            {(profile?.username || user.email)?.charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-semibold">{user.email}</span>
+                                        <span className="truncate font-semibold">{profile?.username || user.email}</span>
                                         <div className="flex items-center gap-2">
                                             <span className="truncate text-xs text-muted-foreground">{planName}</span>
                                             {planName !== 'Free Plan' && (

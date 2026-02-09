@@ -14,7 +14,7 @@ export default async function SettingsPage() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('notification_email, notification_solves, notification_leaderboard, avatar_url, full_name, username, bio, website, mfa_enabled')
+        .select('notification_email, notification_solves, notification_leaderboard')
         .eq('id', user?.id)
         .single()
 
@@ -28,23 +28,13 @@ export default async function SettingsPage() {
         <div className="max-w-2xl space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">Manage your account preferences</p>
+                <p className="text-muted-foreground">Manage your account preferences and security</p>
             </div>
 
             <SettingsForm
                 initialSettings={initialSettings}
-                user={{
-                    id: user.id,
-                    email: user.email!,
-                    avatar_url: profile?.avatar_url,
-                    full_name: profile?.full_name,
-                    username: profile?.username || 'User',
-                    bio: profile?.bio,
-                    website: profile?.website,
-                    mfa_enabled: profile?.mfa_enabled || false
-                }}
+                userEmail={user.email!}
             />
         </div>
     )
 }
-

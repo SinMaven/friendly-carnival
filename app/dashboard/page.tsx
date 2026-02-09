@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export const dynamic = 'force-dynamic'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getUserStats } from '@/features/challenges/queries/get-leaderboard'
 import { Flag, Trophy, Target, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,17 +11,15 @@ export default async function DashboardPage() {
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Fetch user profile stats
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, total_points, total_solves, rank')
-        .eq('id', user?.id)
-        .single()
+    // Fetch user profile stats with dynamic rank
+    const statsData = user ? await getUserStats(user.id) : null
+    const profile = statsData?.profile
+    const rank = statsData?.rank
 
     const stats = [
         { label: 'Total Points', value: profile?.total_points || 0, icon: Zap },
         { label: 'Challenges Solved', value: profile?.total_solves || 0, icon: Flag },
-        { label: 'Global Rank', value: profile?.rank ? `#${profile.rank}` : 'Unranked', icon: Trophy },
+        { label: 'Global Rank', value: rank ? `#${rank}` : 'Unranked', icon: Trophy },
     ]
 
     return (

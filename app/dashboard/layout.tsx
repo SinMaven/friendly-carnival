@@ -21,9 +21,20 @@ export default async function DashboardLayout({
         .in('status', ['trialing', 'active'])
         .maybeSingle()
 
+    // Fetch profile
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url, full_name')
+        .eq('id', user.id)
+        .single()
+
     return (
         <SidebarProvider>
-            <AppSidebar user={{ email: user.email || '', id: user.id }} subscription={subscription} />
+            <AppSidebar
+                user={{ email: user.email || '', id: user.id }}
+                subscription={subscription}
+                profile={profile}
+            />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
                     <SidebarTrigger className="-ml-1" />

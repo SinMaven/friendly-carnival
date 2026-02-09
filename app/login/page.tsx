@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { OAuthButtons } from '@/components/auth/oauth-buttons'
 import { TurnstileCaptcha, TurnstileCaptchaRef } from '@/components/auth/turnstile-captcha'
@@ -19,6 +18,9 @@ export default function LoginPage() {
     const [password, setPassword] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+    const [mfaRequired, setMfaRequired] = useState(false)
+    const [mfaCode, setMfaCode] = useState('')
+    const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
 
     const router = useRouter()
     const captchaRef = useRef<TurnstileCaptchaRef>(null)
@@ -48,11 +50,100 @@ export default function LoginPage() {
                 setError(error.message)
                 captchaRef.current?.reset()
                 setCaptchaToken(null)
+                return
+            }
+
+            // Check for MFA support
+            // If the user has enabled MFA (TOTP), we should check for factors
+            // We can check if AAL is 1 but factors exist
+            const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors()
+            if (mfaError) {
+                console.error('MFA check failed', mfaError)
+                // Optionally proceed if MFA check fails, or block
+                // Let's proceed for now but log it
+            }
+
+            const verifiedFactor = mfaData?.all?.find(f => f.status === 'verified' && f.factor_type === 'totp')
+
+            if (verifiedFactor) {
+                setMfaFactorId(verifiedFactor.id)
+                setMfaRequired(true)
             } else {
                 router.push('/dashboard')
                 router.refresh()
             }
         })
+    }
+
+    const handleMFAVerify = (e: React.FormEvent) => {
+        e.preventDefault()
+        setError(null)
+
+        if (!mfaFactorId || !mfaCode) return
+
+        startTransition(async () => {
+            const { error } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: mfaFactorId,
+                code: mfaCode,
+            })
+
+            if (error) {
+                setError(error.message)
+            } else {
+                router.push('/dashboard')
+                router.refresh()
+            }
+        })
+    }
+
+    if (mfaRequired) {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-4">
+                <Card className="w-full max-w-sm">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl">Create Authentication</CardTitle>
+                        <CardDescription>
+                            Enter the code from your authenticator app.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleMFAVerify} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="mfa-code">Authentication Code</Label>
+                                <Input
+                                    id="mfa-code"
+                                    type="text"
+                                    placeholder="123456"
+                                    value={mfaCode}
+                                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    required
+                                    autoFocus
+                                    maxLength={6}
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <p>{error}</p>
+                                </div>
+                            )}
+
+                            <Button type="submit" className="w-full" disabled={isPending}>
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Verifying...
+                                    </>
+                                ) : (
+                                    'Verify'
+                                )}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     return (

@@ -1,76 +1,78 @@
 'use client'
-
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader2, Save } from 'lucide-react'
-import type { Tables } from '@/lib/supabase/types'
-import { updateProfile } from '@/features/account/actions/update-profile'
+import { Loader2, Save, User } from 'lucide-react'
+import { updateSettings } from '@/features/account/actions/update-settings'
+import { AvatarUploader } from './avatar-uploader'
 
 interface ProfileFormProps {
-    profile: Tables<'profiles'>
+    user: {
+        id: string
+        username: string
+        full_name?: string | null
+        avatar_url?: string | null
+        bio?: string | null
+        website?: string | null
+    }
 }
 
-export function ProfileForm({ profile }: ProfileFormProps) {
-    const router = useRouter()
+export function ProfileForm({ user }: ProfileFormProps) {
     const [isPending, startTransition] = useTransition()
     const [formData, setFormData] = useState({
-        username: profile.username || '',
-        full_name: profile.full_name || '',
-        bio: profile.bio || '',
-        website: profile.website || '',
-        github_handle: profile.github_handle || '',
+        username: user.username,
+        full_name: user.full_name || '',
+        bio: user.bio || '',
+        website: user.website || '',
     })
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSave = () => {
         startTransition(async () => {
-            const result = await updateProfile(formData)
+            const result = await updateSettings({
+                username: formData.username,
+                full_name: formData.full_name,
+                bio: formData.bio,
+                website: formData.website,
+            })
 
             if (!result.success) {
                 setMessage({ type: 'error', text: result.message })
             } else {
                 setMessage({ type: 'success', text: result.message })
+                setTimeout(() => setMessage(null), 3000)
             }
         })
     }
 
     return (
-        <form onSubmit={handleSubmit}>
+        <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>Update your public profile details</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Public Profile
+                    </CardTitle>
+                    <CardDescription>Manage how others see you on the platform</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Avatar */}
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-20 w-20">
-                            <AvatarImage src={profile.avatar_url || undefined} />
-                            <AvatarFallback className="text-2xl">
-                                {profile.username?.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-medium">{profile.username}</p>
-                            <p className="text-sm text-muted-foreground">
-                                Rank #{profile.rank || 'Unranked'} • {profile.total_points || 0} points
-                            </p>
-                        </div>
+                    <div className="space-y-2">
+                        <Label>Profile Picture</Label>
+                        <AvatarUploader
+                            currentUrl={user.avatar_url}
+                            fallback={user.username.charAt(0).toUpperCase()}
+                        />
                     </div>
 
-                    {/* Form Fields */}
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="username">Username</Label>
                             <Input
                                 id="username"
+                                placeholder="Username"
                                 value={formData.username}
                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                             />
@@ -79,6 +81,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
                             <Label htmlFor="full_name">Full Name</Label>
                             <Input
                                 id="full_name"
+                                placeholder="Full Name"
                                 value={formData.full_name}
                                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                             />
@@ -89,54 +92,39 @@ export function ProfileForm({ profile }: ProfileFormProps) {
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea
                             id="bio"
+                            placeholder="Tell us about yourself..."
                             value={formData.bio}
                             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                            placeholder="Tell us about yourself..."
+                            className="resize-none"
                             rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">Brief description for your profile.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="website">Website</Label>
+                        <Input
+                            id="website"
+                            type="url"
+                            placeholder="https://yourwebsite.com"
+                            value={formData.website}
+                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                         />
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="website">Website</Label>
-                            <Input
-                                id="website"
-                                type="url"
-                                value={formData.website}
-                                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                                placeholder="https://..."
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="github_handle">GitHub Handle</Label>
-                            <Input
-                                id="github_handle"
-                                value={formData.github_handle}
-                                onChange={(e) => setFormData({ ...formData, github_handle: e.target.value })}
-                                placeholder="username"
-                            />
-                        </div>
-                    </div>
-
                     {message && (
-                        <div className={`p-3  text-sm ${message.type === 'success'
-                            ? 'bg-green-500/10 text-green-500'
-                            : 'bg-red-500/10 text-red-500'
-                            }`}>
+                        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                             {message.text}
                         </div>
                     )}
 
-                    <Button type="submit" disabled={isPending}>
-                        {isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                            <Save className="h-4 w-4 mr-2" />
-                        )}
-                        Save Changes
-                    </Button>
+                    <div className="flex justify-end">
+                        <Button onClick={handleSave} disabled={isPending}>
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            Save Profile
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
-        </form>
+        </div>
     )
 }

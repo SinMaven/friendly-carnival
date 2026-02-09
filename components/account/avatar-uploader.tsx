@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Loader2, Camera } from 'lucide-react'
@@ -12,6 +13,7 @@ interface AvatarUploaderProps {
 }
 
 export function AvatarUploader({ currentUrl, fallback }: AvatarUploaderProps) {
+    const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -40,6 +42,7 @@ export function AvatarUploader({ currentUrl, fallback }: AvatarUploaderProps) {
                 // Add cache-busting parameter for immediate display
                 const cacheBustedUrl = `${result.url}?t=${Date.now()}`
                 setPreviewUrl(cacheBustedUrl)
+                router.refresh() // Refresh server components to show new avatar sidebar/header
             } else {
                 setPreviewUrl(null)
             }
