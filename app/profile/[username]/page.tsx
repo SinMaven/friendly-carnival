@@ -18,7 +18,7 @@ export default async function PublicProfilePage({ params }: { params: { username
         .from('profiles')
         .select('*')
         .eq('username', username)
-        .single()
+        .maybeSingle()
 
     if (!profile) {
         notFound()
