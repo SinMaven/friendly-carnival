@@ -155,14 +155,54 @@ export default async function LandingPage() {
 
             {/* Footer */}
             <footer className="border-t py-8 px-4">
-                <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2 font-bold">
-                        <Flag className="h-5 w-5 text-primary" />
-                        CTF Platform
+                <div className="container mx-auto max-w-6xl">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                        <div>
+                            <div className="flex items-center gap-2 font-bold mb-4">
+                                <Flag className="h-5 w-5 text-primary" />
+                                CTF Platform
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Master cybersecurity through practice with real-world CTF challenges.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-4">Product</h4>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li><Link href="/dashboard/challenges" className="hover:text-primary">Challenges</Link></li>
+                                <li><Link href="/dashboard/leaderboard" className="hover:text-primary">Leaderboard</Link></li>
+                                <li><Link href="/pricing" className="hover:text-primary">Pricing</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-4">Resources</h4>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li><Link href="/help" className="hover:text-primary">Help Center</Link></li>
+                                <li><Link href="/help/getting-started" className="hover:text-primary">Getting Started</Link></li>
+                                <li><Link href="/docs/API.md" className="hover:text-primary">API Docs</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-4">Legal</h4>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li><Link href="/legal/privacy" className="hover:text-primary">Privacy Policy</Link></li>
+                                <li><Link href="/legal/terms" className="hover:text-primary">Terms of Service</Link></li>
+                                <li><Link href="/legal/sla" className="hover:text-primary">SLA</Link></li>
+                                <li><Link href="/legal/security" className="hover:text-primary">Security</Link></li>
+                            </ul>
+                        </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        © 2024 CTF Platform. All rights reserved.
-                    </p>
+                    <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-sm text-muted-foreground">
+                            © 2024 CTF Platform. All rights reserved.
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <Link href="/legal/security" className="hover:text-primary flex items-center gap-1">
+                                <Shield className="h-4 w-4" />
+                                SOC 2 Compliant
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </footer>
         </div>

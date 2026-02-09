@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { logChallengeEvent, logSecurityEvent, AuditEventTypes } from '@/lib/audit-logger';
 
 // SHA-256 hash function using Web Crypto API
 async function sha256(message: string): Promise<string> {
@@ -71,6 +72,15 @@ export async function submitFlag(
         .gte('created_at', oneMinuteAgo);
 
     if (recentSubmissions && recentSubmissions >= 10) {
+        // Log security event for rate limiting
+        await logSecurityEvent(AuditEventTypes.SECURITY.RATE_LIMIT_EXCEEDED, {
+            userId,
+            payloadDiff: {
+                context: 'flag_submission',
+                challenge_id: challengeId,
+                attempts: recentSubmissions,
+            },
+        });
         return {
             success: false,
             message: 'Too many attempts. Please wait a minute before trying again.'
@@ -104,6 +114,12 @@ export async function submitFlag(
     });
 
     if (!isValid) {
+        // Log failed attempt
+        await logChallengeEvent(AuditEventTypes.CHALLENGE.SOLVE_FAILED, {
+            userId,
+            challengeId,
+            payloadDiff: { flag_submitted: true },
+        });
         return { success: false, message: 'Incorrect flag. Try again!' };
     }
 
@@ -133,6 +149,16 @@ export async function submitFlag(
         .eq('challenge_id', challengeId);
 
     const isFirstBlood = solveCount === 0;
+
+    // Log successful solve
+    await logChallengeEvent(AuditEventTypes.CHALLENGE.SOLVED, {
+        userId,
+        challengeId,
+        payloadDiff: {
+            points_awarded: pointsAwarded,
+            is_first_blood: isFirstBlood,
+        },
+    });
 
     // Record the solve
     const { error: solveError } = await supabase.from('solves').insert({

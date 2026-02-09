@@ -13,6 +13,7 @@ import {
     Settings,
     LogOut,
     ChevronUp,
+    HelpCircle,
 } from 'lucide-react'
 
 import {
@@ -49,6 +50,10 @@ const accountNavItems = [
     { title: 'Team', url: '/dashboard/team', icon: Users },
     { title: 'Subscription', url: '/dashboard/subscription', icon: CreditCard },
     { title: 'Settings', url: '/dashboard/settings', icon: Settings },
+]
+
+const supportNavItems = [
+    { title: 'Help Center', url: '/help', icon: HelpCircle },
 ]
 
 import { Badge } from '@/components/ui/badge'
@@ -125,6 +130,24 @@ export function AppSidebar({
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {accountNavItems.map((item) => (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton asChild isActive={pathname === item.url}>
+                                        <Link href={item.url}>
+                                            <item.icon />
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Support</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {supportNavItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild isActive={pathname === item.url}>
                                         <Link href={item.url}>

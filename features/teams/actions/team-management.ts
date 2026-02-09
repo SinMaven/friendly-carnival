@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { nanoid } from 'nanoid'
+import { logTeamEvent, AuditEventTypes } from '@/lib/audit-logger'
 
 export type TeamActionResult<T = unknown> = {
     success: boolean
@@ -70,6 +71,14 @@ export async function createTeam(name: string): Promise<TeamActionResult> {
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.CREATED, {
+        userId: user.id,
+        teamId: team.id,
+        payloadDiff: { team_name: name, slug },
+    })
+
     return { success: true, message: 'Team created successfully', data: team }
 }
 
@@ -138,6 +147,14 @@ export async function joinTeam(inviteCode: string): Promise<TeamActionResult> {
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.MEMBER_JOINED, {
+        userId: user.id,
+        teamId: invite.team_id,
+        payloadDiff: { invite_code: inviteCode },
+    })
+
     return { success: true, message: 'Successfully joined the team' }
 }
 
@@ -181,6 +198,13 @@ export async function leaveTeam(): Promise<TeamActionResult> {
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.MEMBER_LEFT, {
+        userId: user.id,
+        teamId: membership.team_id,
+    })
+
     return { success: true, message: 'Successfully left the team' }
 }
 
@@ -233,6 +257,16 @@ export async function generateInviteCode(
         return { success: false, message: 'Failed to generate invite code' }
     }
 
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.INVITE_SENT, {
+        userId: user.id,
+        teamId,
+        payloadDiff: { 
+            expires_at: expiresAt,
+            max_uses: options?.maxUses,
+        },
+    })
+
     return { success: true, message: 'Invite code generated', data: { code: invite.code } }
 }
 
@@ -274,6 +308,14 @@ export async function updateTeamName(teamId: string, name: string): Promise<Team
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.UPDATED, {
+        userId: user.id,
+        teamId,
+        payloadDiff: { name, slug },
+    })
+
     return { success: true, message: 'Team name updated' }
 }
 
@@ -313,6 +355,13 @@ export async function deleteTeam(teamId: string): Promise<TeamActionResult> {
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.DELETED, {
+        userId: user.id,
+        teamId,
+    })
+
     return { success: true, message: 'Team deleted' }
 }
 
@@ -368,6 +417,14 @@ export async function removeMember(memberId: string, teamId: string): Promise<Te
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.MEMBER_REMOVED, {
+        userId: user.id,
+        teamId,
+        targetUserId: member.user_id,
+    })
+
     return { success: true, message: 'Member removed from team' }
 }
 
@@ -464,5 +521,13 @@ export async function transferOwnership(memberId: string, teamId: string): Promi
 
     revalidatePath('/dashboard/team')
     revalidatePath('/dashboard', 'layout')
+
+    // Audit log
+    await logTeamEvent(AuditEventTypes.TEAM.OWNERSHIP_TRANSFERRED, {
+        userId: user.id,
+        teamId,
+        targetUserId: member.user_id,
+    })
+
     return { success: true, message: 'Ownership transferred successfully' }
 }
